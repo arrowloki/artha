@@ -98,4 +98,22 @@
   - Tracked as progress envelopes towards a future target date.
   - Provides instant 1-tap contribution buttons to accelerate wealth accumulation.
 
+---
+
+## 10. Milestone 4: Insight, Cash Flow, EMI & Prepayment Simulation
+- **Decision: Reducing-Balance Loan Amortization (`EmiCalculator`)**:
+  - Implements the mathematical loan EMI formula with 64-bit integer minor math and Banker's Rounding:
+    $EMI = \frac{P \cdot r \cdot (1 + r)^n}{(1 + r)^n - 1}$
+  - Month-by-month schedule rigorously calculates interest and principal components, guaranteeing closing balance reaches exactly zero in the final month.
+- **Decision: Prepayment Simulation Engine**:
+  - Simulates the compounding financial impact of extra recurring monthly payments or lumpsum prepayments.
+  - Dynamically calculates the exact total interest savings and the number of months shaved off the loan tenure.
+- **Decision: Offline Cash Flow & Category Share (`ReportsEngine`)**:
+  - Automatically aggregates inflow, outflow, net savings, and savings rate percentage ($(\text{Inflow} - \text{Outflow}) / \text{Inflow} \times 100$).
+  - Produces category share distributions without querying raw transactions, using pre-computed Room aggregate tables.
+- **Decision: Unified Shared Debts & IOUs**:
+  - Segregates money lent (personal assets owed to user) from money borrowed and EMI loans (liabilities).
+  - Offers instant 1-tap "Settle Up" action to record repayments and adjust debt balances.
+
+
 

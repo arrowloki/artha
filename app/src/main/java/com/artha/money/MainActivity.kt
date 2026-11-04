@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
+import androidx.compose.material.icons.automirrored.rounded.ShowChart
 import androidx.compose.material.icons.rounded.AccountBalance
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.TrackChanges
@@ -33,6 +34,8 @@ import androidx.core.view.WindowCompat
 import com.artha.data.preferences.UserPreferences
 import com.artha.feature.accounts.AccountsViewModel
 import com.artha.feature.accounts.list.AccountListScreen
+import com.artha.feature.insight.InsightScreen
+import com.artha.feature.insight.InsightViewModel
 import com.artha.feature.planning.PlanningScreen
 import com.artha.feature.planning.PlanningViewModel
 import com.artha.feature.transactions.TransactionsViewModel
@@ -113,10 +116,19 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
+                val insightViewModel = remember {
+                    InsightViewModel(
+                        transactionRepository = app.transactionRepository,
+                        categoryRepository = app.categoryRepository,
+                        debtLoanRepository = app.debtLoanRepository
+                    )
+                }
+
                 MainAppScreen(
                     txViewModel = txViewModel,
                     accountsViewModel = accountsViewModel,
                     planningViewModel = planningViewModel,
+                    insightViewModel = insightViewModel,
                     userPreferences = userPrefs,
                     preferencesRepository = prefsRepo
                 )
@@ -130,6 +142,7 @@ fun MainAppScreen(
     txViewModel: TransactionsViewModel,
     accountsViewModel: AccountsViewModel,
     planningViewModel: PlanningViewModel,
+    insightViewModel: InsightViewModel,
     userPreferences: UserPreferences,
     preferencesRepository: com.artha.data.preferences.UserPreferencesRepository
 ) {
@@ -140,7 +153,8 @@ fun MainAppScreen(
         Triple("Transactions", Icons.AutoMirrored.Rounded.ReceiptLong, 0),
         Triple("Accounts", Icons.Rounded.AccountBalance, 1),
         Triple("Planning", Icons.Rounded.TrackChanges, 2),
-        Triple("Settings", Icons.Rounded.Settings, 3)
+        Triple("Insights", Icons.AutoMirrored.Rounded.ShowChart, 3),
+        Triple("Settings", Icons.Rounded.Settings, 4)
     )
 
     Scaffold(
@@ -164,7 +178,7 @@ fun MainAppScreen(
                         label = {
                             Text(
                                 text = label,
-                                fontSize = 11.5.sp,
+                                fontSize = 10.5.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                             )
                         },
@@ -189,7 +203,8 @@ fun MainAppScreen(
                 0 -> TransactionListScreen(viewModel = txViewModel)
                 1 -> AccountListScreen(viewModel = accountsViewModel)
                 2 -> PlanningScreen(viewModel = planningViewModel)
-                3 -> SettingsScreen(
+                3 -> InsightScreen(viewModel = insightViewModel)
+                4 -> SettingsScreen(
                     userPreferences = userPreferences,
                     preferencesRepository = preferencesRepository
                 )

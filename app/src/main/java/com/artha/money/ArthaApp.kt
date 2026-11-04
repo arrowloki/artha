@@ -18,6 +18,9 @@ import com.artha.database.entity.AccountEntity
 import com.artha.database.entity.BillSubscriptionEntity
 import com.artha.database.entity.BudgetEntity
 import com.artha.database.entity.GoalEntity
+import com.artha.data.repository.DebtLoanRepository
+import com.artha.database.entity.DebtLoanEntity
+import com.artha.model.DebtType
 import com.artha.model.AccountType
 import com.artha.model.BudgetPeriod
 import com.artha.model.RecurrenceFrequency
@@ -57,6 +60,9 @@ class ArthaApp : Application() {
     lateinit var recurringRuleRepository: RecurringRuleRepository
         private set
 
+    lateinit var debtLoanRepository: DebtLoanRepository
+        private set
+
     override fun onCreate() {
         super.onCreate()
         instance = this
@@ -73,6 +79,7 @@ class ArthaApp : Application() {
         billSubscriptionRepository = BillSubscriptionRepository(database)
         goalRepository = GoalRepository(database)
         recurringRuleRepository = RecurringRuleRepository(database)
+        debtLoanRepository = DebtLoanRepository(database)
 
         // Schedule WorkManager for recurring entries
         val recurringWork = PeriodicWorkRequestBuilder<RecurringTransactionWorker>(1, TimeUnit.DAYS).build()
@@ -87,6 +94,7 @@ class ArthaApp : Application() {
             categoryRepository.seedDefaultCategoriesIfEmpty()
             seedStarterAccountsIfEmpty()
             seedStarterPlanningIfEmpty()
+            seedStarterDebtsIfEmpty()
         }
     }
 
@@ -187,6 +195,38 @@ class ArthaApp : Application() {
                 targetDate = now + TimeUnit.DAYS.toMillis(180)
             )
             goalRepository.saveGoal(sampleGoal)
+        }
+    }
+
+    private suspend fun seedStarterDebtsIfEmpty() {
+        val debts = debtLoanRepository.getAllDebtsFlow().firstOrNull()
+        if (debts.isNullOrEmpty()) {
+            val now = System.currentTimeMillis()
+            val sampleDebts = listOf(
+                DebtLoanEntity(
+                    id = "debt_lent_1",
+                    personOrInstitution = "Rahul (Colleague)",
+                    type = DebtType.LENT,
+                    principalMinor = 500000L, // ₹5,000.00
+                    remainingMinor = 500000L,
+                    startDate = now,
+                    notes = "Lunch & event tickets"
+                ),
+                DebtLoanEntity(
+                    id = "debt_loan_1",
+                    personOrInstitution = "SBI Auto Loan",
+                    type = DebtType.EMI_LOAN,
+                    principalMinor = 80000000L, // ₹8,00,000.00
+                    remainingMinor = 65000000L, // ₹6,50,000.00
+                    interestRateApr = 8.75,
+                    tenureMonths = 60,
+                    emiAmountMinor = 1650800L, // ₹16,508.00
+                    emiDueDay = 10,
+                    startDate = now,
+                    notes = "Car purchase"
+                )
+            )
+            sampleDebts.forEach { debtLoanRepository.saveDebt(it) }
         }
     }
 
