@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - Class com.artha.database.SingleCountCreditCardTest</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<h1>Class com.artha.database.SingleCountCreditCardTest</h1>
+<div class="breadcrumbs">
+<a href="../index.html">all</a> &gt; 
+<a href="../packages/com.artha.database.html">com.artha.database</a> &gt; SingleCountCreditCardTest</div>
+<div id="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox" id="tests">
+<div class="counter">2</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="failures">
+<div class="counter">2</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="ignored">
+<div class="counter">0</div>
+<p>ignored</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="duration">
+<div class="counter">3.092s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox failures" id="successRate">
+<div class="percent">0%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="tabs">
+<ul class="tabLinks">
+<li>
+<a href="#tab0">Failed tests</a>
+</li>
+<li>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
+</li>
+<li>
+<a href="#tab3">Standard error</a>
+</li>
+</ul>
+<div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="testFtsSearch"></a>
+<h3 class="failures">testFtsSearch</h3>
+<span class="code">
+<pre>java.lang.UnsupportedOperationException: Architecture 'aarch64' is not supported by SQLite library
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.getArchitectureSuffix(SQLiteLibraryLoader.java:164)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.getNativesResourcesPathPart(SQLiteLibraryLoader.java:113)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.getLibClasspathResourceName(SQLiteLibraryLoader.java:63)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.getLibraryByteSource(SQLiteLibraryLoader.java:67)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.doLoad(SQLiteLibraryLoader.java:54)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.load(SQLiteLibraryLoader.java:42)
+	at org.robolectric.shadows.ShadowLegacySQLiteConnection.nativeOpen(ShadowLegacySQLiteConnection.java:71)
+	at android.database.sqlite.SQLiteConnection.nativeOpen(SQLiteConnection.java)
+	at android.database.sqlite.SQLiteConnection.open(SQLiteConnection.java:209)
+	at android.database.sqlite.SQLiteConnection.open(SQLiteConnection.java:193)
+	at android.database.sqlite.SQLiteConnectionPool.openConnectionLocked(SQLiteConnectionPool.java:463)
+	at android.database.sqlite.SQLiteConnectionPool.open(SQLiteConnectionPool.java:185)
+	at android.database.sqlite.SQLiteConnectionPool.open(SQLiteConnectionPool.java:177)
+	at android.database.sqlite.SQLiteDatabase.openInner(SQLiteDatabase.java:804)
+	at android.database.sqlite.SQLiteDatabase.open(SQLiteDatabase.java:789)
+	at android.database.sqlite.SQLiteDatabase.openDatabase(SQLiteDatabase.java:694)
+	at android.database.sqlite.SQLiteDatabase.openDatabase(SQLiteDatabase.java:669)
+	at android.database.sqlite.SQLiteDatabase.create(SQLiteDatabase.java:826)
+	at android.database.sqlite.SQLiteOpenHelper.getDatabaseLocked(SQLiteOpenHelper.java:216)
+	at android.database.sqlite.SQLiteOpenHelper.getWritableDatabase(SQLiteOpenHelper.java:164)
+	at androidx.sqlite.db.framework.FrameworkSQLiteOpenHelper$OpenHelper.getWritableOrReadableDatabase(FrameworkSQLiteOpenHelper.kt:232)
+	at androidx.sqlite.db.framework.FrameworkSQLiteOpenHelper$OpenHelper.innerGetDatabase(FrameworkSQLiteOpenHelper.kt:190)
+	at androidx.sqlite.db.framework.FrameworkSQLiteOpenHelper$OpenHelper.getSupportDatabase(FrameworkSQLiteOpenHelper.kt:151)
+	at androidx.sqlite.db.framework.FrameworkSQLiteOpenHelper.getWritableDatabase(FrameworkSQLiteOpenHelper.kt:104)
+	at androidx.room.RoomDatabase.internalBeginTransaction(RoomDatabase.kt:522)
+	at androidx.room.RoomDatabase.beginTransaction(RoomDatabase.kt:511)
+	at com.artha.database.dao.AccountDao_Impl$5.call(AccountDao_Impl.java:154)
+	at com.artha.database.dao.AccountDao_Impl$5.call(AccountDao_Impl.java:150)
+	at androidx.room.CoroutinesRoom$Companion$execute$2.invokeSuspend(CoroutinesRoom.kt:64)
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.artha.database.SingleCountCreditCardTest$testFtsSearch$1.invokeSuspend(SingleCountCreditCardTest.kt:151)
+Caused by: java.lang.UnsupportedOperationException: Architecture 'aarch64' is not supported by SQLite library
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.getArchitectureSuffix(SQLiteLibraryLoader.java:164)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.getNativesResourcesPathPart(SQLiteLibraryLoader.java:113)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.getLibClasspathResourceName(SQLiteLibraryLoader.java:63)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.getLibraryByteSource(SQLiteLibraryLoader.java:67)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.doLoad(SQLiteLibraryLoader.java:54)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.load(SQLiteLibraryLoader.java:42)
+	at org.robolectric.shadows.ShadowLegacySQLiteConnection.nativeOpen(ShadowLegacySQLiteConnection.java:71)
+	at android.database.sqlite.SQLiteConnection.nativeOpen(SQLiteConnection.java)
+	at android.database.sqlite.SQLiteConnection.open(SQLiteConnection.java:209)
+	at android.database.sqlite.SQLiteConnection.open(SQLiteConnection.java:193)
+	at android.database.sqlite.SQLiteConnectionPool.openConnectionLocked(SQLiteConnectionPool.java:463)
+	at android.database.sqlite.SQLiteConnectionPool.open(SQLiteConnectionPool.java:185)
+	at android.database.sqlite.SQLiteConnectionPool.open(SQLiteConnectionPool.java:177)
+	at android.database.sqlite.SQLiteDatabase.openInner(SQLiteDatabase.java:804)
+	at android.database.sqlite.SQLiteDatabase.open(SQLiteDatabase.java:789)
+	at android.database.sqlite.SQLiteDatabase.openDatabase(SQLiteDatabase.java:694)
+	at android.database.sqlite.SQLiteDatabase.openDatabase(SQLiteDatabase.java:669)
+	at android.database.sqlite.SQLiteDatabase.create(SQLiteDatabase.java:826)
+	at android.database.sqlite.SQLiteOpenHelper.getDatabaseLocked(SQLiteOpenHelper.java:216)
+	at android.database.sqlite.SQLiteOpenHelper.getWritableDatabase(SQLiteOpenHelper.java:164)
+	at androidx.sqlite.db.framework.FrameworkSQLiteOpenHelper$OpenHelper.getWritableOrReadableDatabase(FrameworkSQLiteOpenHelper.kt:232)
+	at androidx.sqlite.db.framework.FrameworkSQLiteOpenHelper$OpenHelper.innerGetDatabase(FrameworkSQLiteOpenHelper.kt:190)
+	at androidx.sqlite.db.framework.FrameworkSQLiteOpenHelper$OpenHelper.getSupportDatabase(FrameworkSQLiteOpenHelper.kt:151)
+	at androidx.sqlite.db.framework.FrameworkSQLiteOpenHelper.getWritableDatabase(FrameworkSQLiteOpenHelper.kt:104)
+	at androidx.room.RoomDatabase.internalBeginTransaction(RoomDatabase.kt:522)
+	at androidx.room.RoomDatabase.beginTransaction(RoomDatabase.kt:511)
+	at com.artha.database.dao.AccountDao_Impl$5.call(AccountDao_Impl.java:154)
+	at com.artha.database.dao.AccountDao_Impl$5.call(AccountDao_Impl.java:150)
+	at androidx.room.CoroutinesRoom$Companion$execute$2.invokeSuspend(CoroutinesRoom.kt:64)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:104)
+	at androidx.room.TransactionExecutor.execute$lambda$1$lambda$0(TransactionExecutor.kt:36)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="testSingleCountCreditCardRule"></a>
+<h3 class="failures">testSingleCountCreditCardRule</h3>
+<span class="code">
+<pre>java.lang.UnsupportedOperationException: Architecture 'aarch64' is not supported by SQLite library
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.getArchitectureSuffix(SQLiteLibraryLoader.java:164)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.getNativesResourcesPathPart(SQLiteLibraryLoader.java:113)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.getLibClasspathResourceName(SQLiteLibraryLoader.java:63)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.getLibraryByteSource(SQLiteLibraryLoader.java:67)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.doLoad(SQLiteLibraryLoader.java:54)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.load(SQLiteLibraryLoader.java:42)
+	at org.robolectric.shadows.ShadowLegacySQLiteConnection.nativeOpen(ShadowLegacySQLiteConnection.java:71)
+	at android.database.sqlite.SQLiteConnection.nativeOpen(SQLiteConnection.java)
+	at android.database.sqlite.SQLiteConnection.open(SQLiteConnection.java:209)
+	at android.database.sqlite.SQLiteConnection.open(SQLiteConnection.java:193)
+	at android.database.sqlite.SQLiteConnectionPool.openConnectionLocked(SQLiteConnectionPool.java:463)
+	at android.database.sqlite.SQLiteConnectionPool.open(SQLiteConnectionPool.java:185)
+	at android.database.sqlite.SQLiteConnectionPool.open(SQLiteConnectionPool.java:177)
+	at android.database.sqlite.SQLiteDatabase.openInner(SQLiteDatabase.java:804)
+	at android.database.sqlite.SQLiteDatabase.open(SQLiteDatabase.java:789)
+	at android.database.sqlite.SQLiteDatabase.openDatabase(SQLiteDatabase.java:694)
+	at android.database.sqlite.SQLiteDatabase.openDatabase(SQLiteDatabase.java:669)
+	at android.database.sqlite.SQLiteDatabase.create(SQLiteDatabase.java:826)
+	at android.database.sqlite.SQLiteOpenHelper.getDatabaseLocked(SQLiteOpenHelper.java:216)
+	at android.database.sqlite.SQLiteOpenHelper.getWritableDatabase(SQLiteOpenHelper.java:164)
+	at androidx.sqlite.db.framework.FrameworkSQLiteOpenHelper$OpenHelper.getWritableOrReadableDatabase(FrameworkSQLiteOpenHelper.kt:232)
+	at androidx.sqlite.db.framework.FrameworkSQLiteOpenHelper$OpenHelper.innerGetDatabase(FrameworkSQLiteOpenHelper.kt:190)
+	at androidx.sqlite.db.framework.FrameworkSQLiteOpenHelper$OpenHelper.getSupportDatabase(FrameworkSQLiteOpenHelper.kt:151)
+	at androidx.sqlite.db.framework.FrameworkSQLiteOpenHelper.getWritableDatabase(FrameworkSQLiteOpenHelper.kt:104)
+	at androidx.room.RoomDatabase.internalBeginTransaction(RoomDatabase.kt:522)
+	at androidx.room.RoomDatabase.beginTransaction(RoomDatabase.kt:511)
+	at com.artha.database.dao.AccountDao_Impl$5.call(AccountDao_Impl.java:154)
+	at com.artha.database.dao.AccountDao_Impl$5.call(AccountDao_Impl.java:150)
+	at androidx.room.CoroutinesRoom$Companion$execute$2.invokeSuspend(CoroutinesRoom.kt:64)
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.artha.database.SingleCountCreditCardTest$testSingleCountCreditCardRule$1.invokeSuspend(SingleCountCreditCardTest.kt:58)
+Caused by: java.lang.UnsupportedOperationException: Architecture 'aarch64' is not supported by SQLite library
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.getArchitectureSuffix(SQLiteLibraryLoader.java:164)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.getNativesResourcesPathPart(SQLiteLibraryLoader.java:113)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.getLibClasspathResourceName(SQLiteLibraryLoader.java:63)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.getLibraryByteSource(SQLiteLibraryLoader.java:67)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.doLoad(SQLiteLibraryLoader.java:54)
+	at org.robolectric.shadows.util.SQLiteLibraryLoader.load(SQLiteLibraryLoader.java:42)
+	at org.robolectric.shadows.ShadowLegacySQLiteConnection.nativeOpen(ShadowLegacySQLiteConnection.java:71)
+	at android.database.sqlite.SQLiteConnection.nativeOpen(SQLiteConnection.java)
+	at android.database.sqlite.SQLiteConnection.open(SQLiteConnection.java:209)
+	at android.database.sqlite.SQLiteConnection.open(SQLiteConnection.java:193)
+	at android.database.sqlite.SQLiteConnectionPool.openConnectionLocked(SQLiteConnectionPool.java:463)
+	at android.database.sqlite.SQLiteConnectionPool.open(SQLiteConnectionPool.java:185)
+	at android.database.sqlite.SQLiteConnectionPool.open(SQLiteConnectionPool.java:177)
+	at android.database.sqlite.SQLiteDatabase.openInner(SQLiteDatabase.java:804)
+	at android.database.sqlite.SQLiteDatabase.open(SQLiteDatabase.java:789)
+	at android.database.sqlite.SQLiteDatabase.openDatabase(SQLiteDatabase.java:694)
+	at android.database.sqlite.SQLiteDatabase.openDatabase(SQLiteDatabase.java:669)
+	at android.database.sqlite.SQLiteDatabase.create(SQLiteDatabase.java:826)
+	at android.database.sqlite.SQLiteOpenHelper.getDatabaseLocked(SQLiteOpenHelper.java:216)
+	at android.database.sqlite.SQLiteOpenHelper.getWritableDatabase(SQLiteOpenHelper.java:164)
+	at androidx.sqlite.db.framework.FrameworkSQLiteOpenHelper$OpenHelper.getWritableOrReadableDatabase(FrameworkSQLiteOpenHelper.kt:232)
+	at androidx.sqlite.db.framework.FrameworkSQLiteOpenHelper$OpenHelper.innerGetDatabase(FrameworkSQLiteOpenHelper.kt:190)
+	at androidx.sqlite.db.framework.FrameworkSQLiteOpenHelper$OpenHelper.getSupportDatabase(FrameworkSQLiteOpenHelper.kt:151)
+	at androidx.sqlite.db.framework.FrameworkSQLiteOpenHelper.getWritableDatabase(FrameworkSQLiteOpenHelper.kt:104)
+	at androidx.room.RoomDatabase.internalBeginTransaction(RoomDatabase.kt:522)
+	at androidx.room.RoomDatabase.beginTransaction(RoomDatabase.kt:511)
+	at com.artha.database.dao.AccountDao_Impl$5.call(AccountDao_Impl.java:154)
+	at com.artha.database.dao.AccountDao_Impl$5.call(AccountDao_Impl.java:150)
+	at androidx.room.CoroutinesRoom$Companion$execute$2.invokeSuspend(CoroutinesRoom.kt:64)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:104)
+	at androidx.room.TransactionExecutor.execute$lambda$1$lambda$0(TransactionExecutor.kt:36)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
+<h2>Tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Duration</th>
+<th>Result</th>
+</tr>
+</thead>
+<tr>
+<td class="failures">testFtsSearch</td>
+<td class="failures">2.567s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">testSingleCountCreditCardRule</td>
+<td class="failures">0.525s</td>
+<td class="failures">failed</td>
+</tr>
+</table>
+</div>
+<div id="tab2" class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre>WARNING: No manifest file found at ./AndroidManifest.xml.
+Falling back to the Android OS resources only.
+To remove this warning, annotate your test class with @Config(manifest=Config.NONE).
+</pre>
+</span>
+</div>
+<div id="tab3" class="tab">
+<h2>Standard error</h2>
+<span class="code">
+<pre>No such manifest file: ./AndroidManifest.xml
+</pre>
+</span>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="http://www.gradle.org">Gradle 8.7</a> at Nov 4, 2026, 5:49:56 PM</p>
+</div>
+</div>
+</body>
+</html>

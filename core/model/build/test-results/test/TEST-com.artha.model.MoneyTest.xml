@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.artha.model.MoneyTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-11-04T17:39:46" hostname="instance-20261024-1340" time="0.091">
+  <properties/>
+  <testcase name="testZeroLossSplitNegativeAmount" classname="com.artha.model.MoneyTest" time="0.003"/>
+  <testcase name="testBankersRoundingOnDivision" classname="com.artha.model.MoneyTest" time="0.001"/>
+  <testcase name="testComparison" classname="com.artha.model.MoneyTest" time="0.009"/>
+  <testcase name="testWesternNumberFormatting" classname="com.artha.model.MoneyTest" time="0.032"/>
+  <testcase name="testIndianNumberFormatting" classname="com.artha.model.MoneyTest" time="0.0"/>
+  <testcase name="testZeroLossSplitWithRemainder" classname="com.artha.model.MoneyTest" time="0.0"/>
+  <testcase name="testZeroLossSplitComplexPrimeParts" classname="com.artha.model.MoneyTest" time="0.0"/>
+  <testcase name="testMajorConversion" classname="com.artha.model.MoneyTest" time="0.002"/>
+  <testcase name="testBasicArithmetic" classname="com.artha.model.MoneyTest" time="0.0"/>
+  <testcase name="testCurrencyMismatchThrowsException" classname="com.artha.model.MoneyTest" time="0.002"/>
+  <testcase name="testZeroLossSplitEven" classname="com.artha.model.MoneyTest" time="0.001"/>
+  <testcase name="testProportionalAllocation" classname="com.artha.model.MoneyTest" time="0.035"/>
+  <testcase name="testBankersRoundingOnScaling" classname="com.artha.model.MoneyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
