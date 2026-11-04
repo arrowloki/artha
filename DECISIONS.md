@@ -60,3 +60,24 @@
 ## 7. Dynamic User-Editable Theme System
 - **Decision:** Design tokens (colors, font scaling, density, corner radii) are exposed via Compose `CompositionLocal` and persisted in DataStore.
 - **Rationale:** Allows live editing with real-time UI updates without requiring an application restart.
+
+---
+
+## 8. Milestone 2: Core Ledger & Account Architecture
+- **Decision: In-App Math Expression Evaluator (`MathExpressionEvaluator`)**:
+  - The fast-add keypad allows real-time evaluation of simple expressions (e.g., `120+45*2` = 210) directly inside the bottom sheet without opening an external calculator.
+  - Implements an $O(N)$ Shunting-Yard operator precedence evaluator with live preview while typing.
+- **Decision: Thumb-Zone Fast Add Sheet (`FastAddTransactionSheet`)**:
+  - Located in the bottom half of the screen for one-handed operation.
+  - 3-tap rapid entry flow: enter amount -> select category pill -> tap Checkmark.
+  - Atomic database write guarantees <50ms commit time and immediate UI dismissal without a loading spinner.
+- **Decision: Reversible Deletions with Undo Buffer**:
+  - When a transaction is deleted, `TransactionDao.deleteTransactionWithAggregates` atomically reverts the source/target account balances and deducts the expense from the monthly and category summary aggregate tables.
+  - Deleted entity is retained in an undo buffer for 4 seconds; tapping "Undo" re-inserts the entity atomically, ensuring aggregate consistency.
+- **Decision: Hand-Tick Statement Reconciliation Mode (`ReconcileScreen`)**:
+  - Reconcile mode tracks an account's running reconciled balance against a user-entered bank statement ending balance.
+  - One-tap toggle updates `is_reconciled` on individual transactions and displays the live difference.
+  - When difference equals zero, the screen alerts "Balanced!", allowing users to verify their ledgers against real-world bank statements.
+- **Decision: First-Launch Zero-Friction Seeding**:
+  - To prevent empty-state paralysis, `ArthaApp` asynchronously seeds realistic starter categories (Food, Groceries, Shopping, Transport, Bills, Salary, etc.) and accounts (Bank, Cash, Credit Card) on first launch.
+

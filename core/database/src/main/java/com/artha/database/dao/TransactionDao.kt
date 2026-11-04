@@ -201,6 +201,125 @@ abstract class TransactionDao {
         }
     }
 
+    @Query("UPDATE transactions SET is_reconciled = :isReconciled, updated_at = :updatedAt WHERE id = :id")
+    abstract suspend fun updateReconciledStatus(id: String, isReconciled: Boolean, updatedAt: Long = System.currentTimeMillis())
+
+    /**
+     * Atomic transaction deletion reverting balance changes and aggregates.
+     */
+    @Transaction
+    open suspend fun deleteTransactionWithAggregates(tx: TransactionEntity) {
+        val yearMonth = formatYearMonth(tx.timestamp)
+        val sourceAccount = getAccount(tx.accountId)
+
+        when (tx.type) {
+            TransactionType.EXPENSE -> {
+                if (sourceAccount != null) {
+                    val balanceDelta = if (sourceAccount.type.isLiability) -tx.amountMinor else tx.amountMinor
+                    updateAccountBalance(tx.accountId, balanceDelta, System.currentTimeMillis())
+                }
+
+                val currentMonth = getMonthlyAggregate(yearMonth, tx.currency)
+                if (currentMonth != null) {
+                    val newExpense = (currentMonth.totalExpenseMinor - tx.amountMinor).coerceAtLeast(0L)
+                    val newCount = (currentMonth.transactionCount - 1).coerceAtLeast(0)
+                    upsertMonthlyAggregate(
+                        currentMonth.copy(
+                            totalExpenseMinor = newExpense,
+                            netSavingsMinor = currentMonth.totalIncomeMinor - newExpense,
+                            transactionCount = newCount,
+                            updatedAt = System.currentTimeMillis()
+                        )
+                    )
+                }
+
+                if (tx.categoryId != null) {
+                    val currentCat = getCategoryMonthlyAggregate(yearMonth, tx.categoryId, tx.currency)
+                    if (currentCat != null) {
+                        val newAmount = (currentCat.totalAmountMinor - tx.amountMinor).coerceAtLeast(0L)
+                        val newCount = (currentCat.transactionCount - 1).coerceAtLeast(0)
+                        upsertCategoryMonthlyAggregate(
+                            currentCat.copy(
+                                totalAmountMinor = newAmount,
+                                transactionCount = newCount
+                            )
+                        )
+                    }
+                }
+
+                val currentAcc = getAccountMonthlyAggregate(yearMonth, tx.accountId)
+                if (currentAcc != null) {
+                    upsertAccountMonthlyAggregate(
+                        currentAcc.copy(
+                            totalOutflowMinor = (currentAcc.totalOutflowMinor - tx.amountMinor).coerceAtLeast(0L)
+                        )
+                    )
+                }
+            }
+
+            TransactionType.INCOME -> {
+                if (sourceAccount != null) {
+                    updateAccountBalance(tx.accountId, -tx.amountMinor, System.currentTimeMillis())
+                }
+
+                val currentMonth = getMonthlyAggregate(yearMonth, tx.currency)
+                if (currentMonth != null) {
+                    val newIncome = (currentMonth.totalIncomeMinor - tx.amountMinor).coerceAtLeast(0L)
+                    val newCount = (currentMonth.transactionCount - 1).coerceAtLeast(0)
+                    upsertMonthlyAggregate(
+                        currentMonth.copy(
+                            totalIncomeMinor = newIncome,
+                            netSavingsMinor = newIncome - currentMonth.totalExpenseMinor,
+                            transactionCount = newCount,
+                            updatedAt = System.currentTimeMillis()
+                        )
+                    )
+                }
+
+                if (tx.categoryId != null) {
+                    val currentCat = getCategoryMonthlyAggregate(yearMonth, tx.categoryId, tx.currency)
+                    if (currentCat != null) {
+                        val newAmount = (currentCat.totalAmountMinor - tx.amountMinor).coerceAtLeast(0L)
+                        val newCount = (currentCat.transactionCount - 1).coerceAtLeast(0)
+                        upsertCategoryMonthlyAggregate(
+                            currentCat.copy(
+                                totalAmountMinor = newAmount,
+                                transactionCount = newCount
+                            )
+                        )
+                    }
+                }
+
+                val currentAcc = getAccountMonthlyAggregate(yearMonth, tx.accountId)
+                if (currentAcc != null) {
+                    upsertAccountMonthlyAggregate(
+                        currentAcc.copy(
+                            totalInflowMinor = (currentAcc.totalInflowMinor - tx.amountMinor).coerceAtLeast(0L)
+                        )
+                    )
+                }
+            }
+
+            TransactionType.TRANSFER -> {
+                val toAccountId = tx.toAccountId
+                val targetAccount = if (toAccountId != null) getAccount(toAccountId) else null
+
+                if (sourceAccount != null) {
+                    val srcDelta = if (sourceAccount.type.isLiability) -tx.amountMinor else tx.amountMinor
+                    updateAccountBalance(tx.accountId, srcDelta, System.currentTimeMillis())
+                }
+
+                if (toAccountId != null && targetAccount != null) {
+                    val destDelta = if (targetAccount.type.isLiability) tx.amountMinor else -tx.amountMinor
+                    updateAccountBalance(toAccountId, destDelta, System.currentTimeMillis())
+                }
+            }
+        }
+
+        deleteFts(tx.id)
+        deleteTransactionRaw(tx)
+    }
+
     private fun formatYearMonth(timestamp: Long): String {
         val sdf = SimpleDateFormat("yyyy-MM", Locale.US)
         return sdf.format(Date(timestamp))

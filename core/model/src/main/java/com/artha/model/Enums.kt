@@ -11,15 +11,15 @@ enum class AccountType(val isLiability: Boolean) {
     CUSTOM(isLiability = false)
 }
 
-enum class PaymentMethod {
-    CASH,
-    UPI,
-    NET_BANKING,
-    DEBIT_CARD,
-    CREDIT_CARD,
-    WALLET,
-    CHEQUE,
-    OTHER
+enum class PaymentMethod(val displayName: String) {
+    CASH("Cash"),
+    UPI("UPI"),
+    NET_BANKING("Net Banking"),
+    DEBIT_CARD("Debit Card"),
+    CREDIT_CARD("Credit Card"),
+    WALLET("Wallet"),
+    CHEQUE("Cheque"),
+    OTHER("Other")
 }
 
 enum class TransactionType {

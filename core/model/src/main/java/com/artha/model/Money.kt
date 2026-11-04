@@ -190,6 +190,8 @@ data class Money(
         }
     }
 
+    fun formatted(): String = format()
+
     override fun compareTo(other: Money): Int {
         requireSameCurrency(other)
         return this.amountMinor.compareTo(other.amountMinor)

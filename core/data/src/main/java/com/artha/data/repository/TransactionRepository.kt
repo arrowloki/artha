@@ -39,6 +39,14 @@ class TransactionRepository(private val db: ArthaDatabase) {
         transactionDao.insertTransactionWithAggregates(transaction, searchableText)
     }
 
+    suspend fun deleteTransaction(transaction: TransactionEntity) {
+        transactionDao.deleteTransactionWithAggregates(transaction)
+    }
+
+    suspend fun updateReconciledStatus(id: String, isReconciled: Boolean) {
+        transactionDao.updateReconciledStatus(id, isReconciled)
+    }
+
     suspend fun searchTransactions(query: String, limit: Int = 100): List<TransactionEntity> {
         return transactionDao.searchTransactions(query, limit)
     }
