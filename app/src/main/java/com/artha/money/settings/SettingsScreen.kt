@@ -22,13 +22,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.ColorLens
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.FileDownload
+import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Rule
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -36,6 +40,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -56,6 +61,7 @@ import androidx.compose.ui.unit.sp
 import com.artha.data.preferences.UserPreferences
 import com.artha.data.preferences.UserPreferencesRepository
 import com.artha.data.repository.CategoryRepository
+import com.artha.data.repository.DataTransferRepository
 import com.artha.data.repository.RuleRepository
 import com.artha.database.entity.RuleEntity
 import com.artha.ui.theme.LocalArthaColors
@@ -69,6 +75,7 @@ fun SettingsScreen(
     preferencesRepository: UserPreferencesRepository,
     ruleRepository: RuleRepository? = null,
     categoryRepository: CategoryRepository? = null,
+    dataTransferRepository: DataTransferRepository? = null,
     modifier: Modifier = Modifier
 ) {
     val colors = LocalArthaColors.current
@@ -80,6 +87,9 @@ fun SettingsScreen(
 
     var showAddRuleSheet by remember { mutableStateOf(false) }
     var rerunStatusMessage by remember { mutableStateOf<String?>(null) }
+    var transferMessage by remember { mutableStateOf<String?>(null) }
+    var showBankCsvDialog by remember { mutableStateOf(false) }
+    var bankCsvText by remember { mutableStateOf("") }
 
     Column(
         modifier = modifier
@@ -418,6 +428,100 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        // --- DATA BACKUP & IMPORT ---
+        Text(
+            text = "DATA BACKUP & IMPORT",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = colors.onBackground.copy(alpha = 0.5f),
+            letterSpacing = 1.sp
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Export Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = colors.surface)
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Text(
+                    text = "Offline Data Portability",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.onBackground
+                )
+                Text(
+                    text = "Export your financial records into standard CSV or full encrypted JSON",
+                    fontSize = 11.5.sp,
+                    color = colors.onBackground.copy(alpha = 0.6f)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                val csv = dataTransferRepository?.exportAllTransactionsCsv() ?: ""
+                                val lineCount = maxOf(0, csv.lines().size - 2)
+                                transferMessage = "Exported $lineCount transactions as CSV!"
+                            }
+                        },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Rounded.FileDownload, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("CSV Export", fontSize = 12.sp)
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                val json = dataTransferRepository?.exportFullJsonBackup() ?: ""
+                                transferMessage = "Full JSON backup generated (${json.length} bytes)!"
+                            }
+                        },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Rounded.CloudSync, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("JSON Backup", fontSize = 12.sp)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = { showBankCsvDialog = true },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary.copy(alpha = 0.15f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Rounded.FileUpload, contentDescription = null, tint = colors.primary, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Import Bank Statement (CSV)", fontSize = 12.sp, color = colors.primary, fontWeight = FontWeight.SemiBold)
+                }
+
+                if (transferMessage != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = transferMessage!!,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF10B981)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
         // --- THEME PRESETS ---
         Text(
             text = "THEME & APPEARANCE",
@@ -559,6 +663,62 @@ fun SettingsScreen(
                     ruleRepository?.insertRule(newRule)
                 }
             }
+        )
+    }
+
+    if (showBankCsvDialog) {
+        AlertDialog(
+            onDismissRequest = { showBankCsvDialog = false },
+            title = {
+                Text(
+                    text = "Import Bank Statement (CSV)",
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.onBackground
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Paste CSV rows or statement text below. Artha auto-detects HDFC, ICICI, SBI, Chase and standard bank formats.",
+                        fontSize = 12.sp,
+                        color = colors.onBackground.copy(alpha = 0.7f),
+                        lineHeight = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = bankCsvText,
+                        onValueChange = { bankCsvText = it },
+                        placeholder = { Text("Date,Description,Debit,Credit,Balance...") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            val imported = dataTransferRepository?.importBankStatementCsv(bankCsvText, "acc_primary_bank") ?: 0
+                            transferMessage = "Imported $imported bank transactions!"
+                            showBankCsvDialog = false
+                            bankCsvText = ""
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
+                ) {
+                    Text("Import", color = colors.background, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showBankCsvDialog = false }) {
+                    Text("Cancel")
+                }
+            },
+            containerColor = colors.surface,
+            shape = RoundedCornerShape(16.dp)
         )
     }
 }

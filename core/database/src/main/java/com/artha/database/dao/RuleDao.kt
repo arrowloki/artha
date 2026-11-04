@@ -17,6 +17,9 @@ interface RuleDao {
     @Query("SELECT * FROM rules ORDER BY priority ASC")
     fun getAllRulesFlow(): Flow<List<RuleEntity>>
 
+    @Query("SELECT * FROM rules")
+    suspend fun getAllRules(): List<RuleEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRule(rule: RuleEntity)
 

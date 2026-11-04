@@ -129,6 +129,31 @@
   - Evaluates configurable conditions (`MERCHANT`, `AMOUNT`, `NOTE`, `PAYMENT_METHOD`) using operators (`CONTAINS`, `EQUALS`, `GREATER_THAN`, `LESS_THAN`, `REGEX`) and executes automated actions (`SET_CATEGORY`, `SET_PAYMENT_METHOD`, `EXCLUDE_FROM_BUDGET`, `EXCLUDE_FROM_REPORTS`).
   - Auto-evaluates on new transactions upon insertion and supports historical batch re-running with automatic incremental category aggregate synchronization.
 
+---
+
+## 12. Milestone 6: Offline Receipts, Data Portability & Bank CSV Engine
+- **Decision: Zero-Cloud Receipt Attachment Management (`ReceiptManager`)**:
+  - Stores captured receipt photos strictly in internal app-private scoped storage (`context.filesDir/receipts/`) with zero external cloud sync or public storage exposure.
+- **Decision: On-Device Receipt Text OCR Analyzer (`ReceiptOcrExtractor`)**:
+  - Heuristic offline regex extraction for receipt images: recognizes merchant brand, date patterns (`dd/MM/yyyy`, `yyyy-MM-dd`), tax components (GST, VAT), subtotal vs grand total amounts, and itemized line items.
+- **Decision: Bank CSV Auto-Detection & Data Portability (`DataTransferEngine` & `DataTransferRepository`)**:
+  - Exports transactions into standardized CSV and full encrypted JSON formats.
+  - Automatically identifies arbitrary bank statement column headers (HDFC, ICICI, SBI, Chase, Standard Chartered) for Transaction Date, Description/Narration, Debit/Outflow, Credit/Inflow, and Balance, enabling instant offline bank statement imports.
+
+---
+
+## 13. Milestone 7: Ownership, Security, Home Widgets & Release Verification
+- **Decision: Biometric Authentication Lock Screen (`BiometricPrompt`)**:
+  - Protects the application behind `androidx.biometric.BiometricPrompt` supporting Class 3 Strong Biometrics (Fingerprint / Face) with fallback to Device PIN / Pattern / Password.
+  - Displays a dedicated `AppLockScreen` overlay until authenticated on launch or resume when biometric protection is enabled.
+- **Decision: Dynamic Screen & Recents Protection (`FLAG_SECURE`)**:
+  - Dynamically attaches `WindowManager.LayoutParams.FLAG_SECURE` to window attributes when `isHideBalancesInRecents` is toggled on, preventing screen capture and blanking out the recents preview card in the Android system task switcher.
+- **Decision: Home Screen Quick Glance Widget (`ArthaQuickWidgetProvider`)**:
+  - Native `AppWidgetProvider` exposing Today's Spending, Daily Safe-to-Spend Allowance, and a 1-tap `+ Quick Add` launcher directly into the thumb-zone Fast Add sheet.
+- **Decision: Release Verification**:
+  - Verified with Room, SQLCipher, and Compose Proguard rules via `./gradlew assembleRelease` and `./gradlew assembleDebug`.
+
+
 
 
 

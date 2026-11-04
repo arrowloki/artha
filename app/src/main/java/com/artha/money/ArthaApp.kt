@@ -21,6 +21,7 @@ import com.artha.database.entity.BudgetEntity
 import com.artha.database.entity.GoalEntity
 import com.artha.database.entity.RuleEntity
 import com.artha.data.repository.DebtLoanRepository
+import com.artha.data.repository.DataTransferRepository
 import com.artha.database.entity.DebtLoanEntity
 import com.artha.model.DebtType
 import com.artha.model.AccountType
@@ -68,6 +69,9 @@ class ArthaApp : Application() {
     lateinit var ruleRepository: RuleRepository
         private set
 
+    lateinit var dataTransferRepository: DataTransferRepository
+        private set
+
     override fun onCreate() {
         super.onCreate()
         instance = this
@@ -86,6 +90,7 @@ class ArthaApp : Application() {
         recurringRuleRepository = RecurringRuleRepository(database)
         debtLoanRepository = DebtLoanRepository(database)
         ruleRepository = RuleRepository(database)
+        dataTransferRepository = DataTransferRepository(database, transactionRepository)
 
         // Schedule WorkManager for recurring entries
         val recurringWork = PeriodicWorkRequestBuilder<RecurringTransactionWorker>(1, TimeUnit.DAYS).build()
