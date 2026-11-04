@@ -4,11 +4,13 @@ import com.artha.database.ArthaDatabase
 import com.artha.database.entity.CategoryMonthlyAggregateEntity
 import com.artha.database.entity.MonthlyAggregateEntity
 import com.artha.database.entity.TransactionEntity
+import com.artha.domain.RulesEngine
 import kotlinx.coroutines.flow.Flow
 
 class TransactionRepository(private val db: ArthaDatabase) {
 
     private val transactionDao = db.transactionDao()
+    private val ruleDao = db.ruleDao()
     private val aggregateDao = db.aggregateDao()
 
     fun getRecentTransactionsFlow(limit: Int = 100, offset: Int = 0): Flow<List<TransactionEntity>> {
@@ -36,7 +38,13 @@ class TransactionRepository(private val db: ArthaDatabase) {
     }
 
     suspend fun recordTransaction(transaction: TransactionEntity, searchableText: String = "") {
-        transactionDao.insertTransactionWithAggregates(transaction, searchableText)
+        val activeRules = ruleDao.getActiveRules()
+        val processed = if (activeRules.isNotEmpty()) {
+            RulesEngine.evaluateAll(transaction, activeRules)
+        } else {
+            transaction
+        }
+        transactionDao.insertTransactionWithAggregates(processed, searchableText)
     }
 
     suspend fun deleteTransaction(transaction: TransactionEntity) {

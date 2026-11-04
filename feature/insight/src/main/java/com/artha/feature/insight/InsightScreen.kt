@@ -62,7 +62,9 @@ import androidx.compose.ui.unit.sp
 import com.artha.database.entity.DebtLoanEntity
 import com.artha.domain.CashFlowSummary
 import com.artha.domain.CategoryShare
+import com.artha.domain.MilestoneComparison
 import com.artha.domain.PeriodComparison
+import com.artha.domain.SimulationResult
 import com.artha.feature.insight.add.AddDebtSheet
 import com.artha.model.DebtType
 import com.artha.model.Money
@@ -74,7 +76,7 @@ fun InsightScreen(
     modifier: Modifier = Modifier
 ) {
     val colors = LocalArthaColors.current
-    var selectedTab by remember { mutableIntStateOf(0) } // 0: Reports, 1: Debts & Loans, 2: EMI Calculator
+    var selectedTab by remember { mutableIntStateOf(0) } // 0: Reports, 1: Debts & Loans, 2: EMI Calculator, 3: What-If
     var showAddDebtSheet by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -108,7 +110,7 @@ fun InsightScreen(
                         .padding(4.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    val tabs = listOf("Cash Flow", "Debts & Loans", "EMI Simulator")
+                    val tabs = listOf("Cash Flow", "Debts", "EMI", "What-If")
                     tabs.forEachIndexed { index, label ->
                         val isSelected = selectedTab == index
                         Box(
@@ -122,7 +124,7 @@ fun InsightScreen(
                         ) {
                             Text(
                                 text = label,
-                                fontSize = 12.5.sp,
+                                fontSize = 11.5.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isSelected) colors.background else colors.onBackground
                             )
@@ -136,6 +138,7 @@ fun InsightScreen(
                 0 -> ReportsTabContent(viewModel = viewModel)
                 1 -> DebtsTabContent(viewModel = viewModel)
                 2 -> EmiCalculatorTabContent(viewModel = viewModel)
+                3 -> WhatIfSimulationTab(viewModel = viewModel)
             }
         }
 
@@ -776,5 +779,284 @@ private fun EmiCalculatorTabContent(viewModel: InsightViewModel) {
         }
 
         item { Spacer(modifier = Modifier.height(80.dp)) }
+    }
+}
+
+@Composable
+fun WhatIfSimulationTab(
+    viewModel: InsightViewModel,
+    modifier: Modifier = Modifier
+) {
+    val colors = LocalArthaColors.current
+    val selectedScenario by viewModel.selectedScenario.collectAsState()
+    val simulationResult by viewModel.whatIfResult.collectAsState()
+
+    val scenarios = listOf(
+        "🚗 ₹15L Car",
+        "✂️ Cut Subs & SIP",
+        "📈 +15% Salary Hike"
+    )
+
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            Text(
+                text = "What-If Financial Scenarios",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = colors.onBackground
+            )
+            Text(
+                text = "Simulate major financial decisions and project 1, 3, and 5 year net worth trajectories side-by-side.",
+                fontSize = 12.sp,
+                color = colors.onBackground.copy(alpha = 0.6f)
+            )
+        }
+
+        // Scenario Pills
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                scenarios.forEachIndexed { index, name ->
+                    val isSelected = selectedScenario == index
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(if (isSelected) colors.primary else colors.surface)
+                            .border(
+                                width = 1.dp,
+                                color = if (isSelected) colors.primary else colors.onBackground.copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                            .clickable { viewModel.selectScenario(index) }
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = name,
+                            fontSize = 13.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) colors.background else colors.onBackground
+                        )
+                    }
+                }
+            }
+        }
+
+        // Scenario Description
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = colors.surface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    val (title, description) = when (selectedScenario) {
+                        0 -> Pair(
+                            "Scenario: Buy ₹15,00,000 Car Next Month",
+                            "Simulates paying ₹3 Lakhs down payment from liquid cash, financing ₹12 Lakhs at 9% p.a. for 48 months (EMI ~₹29,862/mo), with 11% p.a. growth on remaining investments."
+                        )
+                        1 -> Pair(
+                            "Scenario: Cut 3 Subscriptions & Redirect to SIP",
+                            "Simulates cancelling ₹1,500/mo of unused subscriptions and investing ₹10,000/mo into an index fund SIP growing at 12% p.a."
+                        )
+                        else -> Pair(
+                            "Scenario: 15% Salary Hike (+₹18,000/mo)",
+                            "Simulates a 15% increase in monthly inflow, diverting 50% (₹9,000/mo) into high-yield SIP compounding at 12% p.a."
+                        )
+                    }
+
+                    Text(
+                        text = title,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.primary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = description,
+                        fontSize = 12.sp,
+                        color = colors.onBackground.copy(alpha = 0.7f),
+                        lineHeight = 16.sp
+                    )
+                }
+            }
+        }
+
+        // Simulation Milestones Comparison
+        if (simulationResult != null) {
+            val result = simulationResult!!
+
+            item {
+                Text(
+                    text = "Projected Net Worth Milestones",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.onBackground
+                )
+            }
+
+            // Milestone 1 Year, 3 Years, 5 Years Cards
+            listOf(result.milestone1Year, result.milestone3Years, result.milestone5Years).forEach { m ->
+                item {
+                    MilestoneCard(milestone = m, colors = colors)
+                }
+            }
+
+            // Runway & Breakeven Card
+            item {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = colors.surface),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Simulated Emergency Runway",
+                                    fontSize = 12.sp,
+                                    color = colors.onBackground.copy(alpha = 0.6f)
+                                )
+                                Text(
+                                    text = "${result.emergencyRunwayMonthsSimulated} Months",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (result.emergencyRunwayMonthsSimulated >= 6) Color(0xFF10B981) else Color(0xFFEF4444)
+                                )
+                            }
+
+                            if (result.breakevenMonth != null) {
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(
+                                        text = "Net Worth Crossover",
+                                        fontSize = 12.sp,
+                                        color = colors.onBackground.copy(alpha = 0.6f)
+                                    )
+                                    Text(
+                                        text = "Month ${result.breakevenMonth}",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = colors.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(80.dp)) }
+    }
+}
+
+@Composable
+fun MilestoneCard(
+    milestone: MilestoneComparison,
+    colors: com.artha.ui.theme.ArthaColors,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = milestone.milestoneName,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.onBackground
+                )
+
+                // Delta Badge
+                val isPositive = milestone.netWorthDelta.amountMinor >= 0
+                val deltaText = if (isPositive) "+${milestone.netWorthDelta.format()}" else milestone.netWorthDelta.format()
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (isPositive) Color(0xFF10B981).copy(alpha = 0.15f) else Color(0xFFEF4444).copy(alpha = 0.15f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = deltaText,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isPositive) Color(0xFF10B981) else Color(0xFFEF4444)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column {
+                    Text(
+                        text = "Status Quo (Baseline)",
+                        fontSize = 11.5.sp,
+                        color = colors.onBackground.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        text = milestone.baselineNetWorth.format(),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.onBackground
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Simulated Scenario",
+                        fontSize = 11.5.sp,
+                        color = colors.onBackground.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        text = milestone.simulatedNetWorth.format(),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.primary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Free Cash Flow / Month",
+                    fontSize = 11.5.sp,
+                    color = colors.onBackground.copy(alpha = 0.6f)
+                )
+                Text(
+                    text = "${milestone.simulatedCashFlow.format()} / mo",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = colors.onBackground
+                )
+            }
+        }
     }
 }

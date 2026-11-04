@@ -130,7 +130,9 @@ class MainActivity : ComponentActivity() {
                     planningViewModel = planningViewModel,
                     insightViewModel = insightViewModel,
                     userPreferences = userPrefs,
-                    preferencesRepository = prefsRepo
+                    preferencesRepository = prefsRepo,
+                    ruleRepository = app.ruleRepository,
+                    categoryRepository = app.categoryRepository
                 )
             }
         }
@@ -144,7 +146,9 @@ fun MainAppScreen(
     planningViewModel: PlanningViewModel,
     insightViewModel: InsightViewModel,
     userPreferences: UserPreferences,
-    preferencesRepository: com.artha.data.preferences.UserPreferencesRepository
+    preferencesRepository: com.artha.data.preferences.UserPreferencesRepository,
+    ruleRepository: com.artha.data.repository.RuleRepository? = null,
+    categoryRepository: com.artha.data.repository.CategoryRepository? = null
 ) {
     val colors = LocalArthaColors.current
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -206,7 +210,9 @@ fun MainAppScreen(
                 3 -> InsightScreen(viewModel = insightViewModel)
                 4 -> SettingsScreen(
                     userPreferences = userPreferences,
-                    preferencesRepository = preferencesRepository
+                    preferencesRepository = preferencesRepository,
+                    ruleRepository = ruleRepository,
+                    categoryRepository = categoryRepository
                 )
             }
         }

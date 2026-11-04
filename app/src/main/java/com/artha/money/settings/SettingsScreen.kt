@@ -19,41 +19,67 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ColorLens
-import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Rule
 import androidx.compose.material.icons.rounded.Security
-import androidx.compose.material.icons.rounded.ViewCompact
+import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.artha.data.preferences.UserPreferences
 import com.artha.data.preferences.UserPreferencesRepository
+import com.artha.data.repository.CategoryRepository
+import com.artha.data.repository.RuleRepository
+import com.artha.database.entity.RuleEntity
 import com.artha.ui.theme.LocalArthaColors
 import com.artha.ui.theme.LocalArthaDensity
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
     userPreferences: UserPreferences,
     preferencesRepository: UserPreferencesRepository,
+    ruleRepository: RuleRepository? = null,
+    categoryRepository: CategoryRepository? = null,
     modifier: Modifier = Modifier
 ) {
     val colors = LocalArthaColors.current
     val density = LocalArthaDensity.current
     val coroutineScope = rememberCoroutineScope()
+
+    val rules by (ruleRepository?.getAllRulesFlow() ?: flowOf(emptyList())).collectAsState(initial = emptyList())
+    val categories by (categoryRepository?.getActiveCategoriesFlow() ?: flowOf(emptyList())).collectAsState(initial = emptyList())
+
+    var showAddRuleSheet by remember { mutableStateOf(false) }
+    var rerunStatusMessage by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = modifier
@@ -73,7 +99,7 @@ fun SettingsScreen(
             color = colors.onBackground.copy(alpha = 0.6f)
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Security Status Card
         Card(
@@ -121,9 +147,278 @@ fun SettingsScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // Theme Preset Section
+        // --- SMART RULES ENGINE SECTION ---
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "SMART RULES ENGINE (${rules.count { it.isActive }} ACTIVE)",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = colors.onBackground.copy(alpha = 0.5f),
+                letterSpacing = 1.sp
+            )
+
+            IconButton(onClick = { showAddRuleSheet = true }) {
+                Icon(
+                    imageVector = Icons.Rounded.Add,
+                    contentDescription = "Add Rule",
+                    tint = colors.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Rerun Rules Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = colors.surface)
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Batch Re-run Engine",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colors.onBackground
+                        )
+                        Text(
+                            text = "Apply active rules across all past transactions",
+                            fontSize = 11.5.sp,
+                            color = colors.onBackground.copy(alpha = 0.6f)
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                val updated = ruleRepository?.rerunAllRulesOnHistory() ?: 0
+                                rerunStatusMessage = "Updated $updated transactions with rules!"
+                            }
+                        },
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Bolt,
+                            contentDescription = null,
+                            tint = colors.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Re-run", fontSize = 12.sp, color = colors.primary)
+                    }
+                }
+
+                if (rerunStatusMessage != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = rerunStatusMessage!!,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF10B981)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // List of Active Rules
+        rules.forEach { rule ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (rule.isActive) colors.surface else colors.surface.copy(alpha = 0.5f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = rule.name,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colors.onBackground
+                        )
+                        val conditionDesc = "If ${rule.conditionField} ${rule.conditionOperator.lowercase()} \"${rule.conditionValue}\""
+                        val actionDesc = "Then ${rule.actionField.lowercase().replace("_", " ")}"
+                        Text(
+                            text = "$conditionDesc → $actionDesc",
+                            fontSize = 11.5.sp,
+                            color = colors.onBackground.copy(alpha = 0.6f)
+                        )
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Switch(
+                            checked = rule.isActive,
+                            onCheckedChange = { checked ->
+                                coroutineScope.launch {
+                                    ruleRepository?.updateRule(rule.copy(isActive = checked))
+                                }
+                            },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = colors.background,
+                                checkedTrackColor = colors.primary
+                            )
+                        )
+
+                        IconButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    ruleRepository?.deleteRule(rule.id)
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Delete,
+                                contentDescription = "Delete",
+                                tint = colors.onBackground.copy(alpha = 0.4f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // --- PRIVACY & SECURITY TOGGLES ---
+        Text(
+            text = "PRIVACY & SECURITY",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = colors.onBackground.copy(alpha = 0.5f),
+            letterSpacing = 1.sp
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Biometrics Toggle
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = colors.surface)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Icon(
+                        imageVector = Icons.Rounded.Fingerprint,
+                        contentDescription = null,
+                        tint = colors.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Biometric Lock",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colors.onBackground
+                        )
+                        Text(
+                            text = "Require fingerprint / face unlock to open app",
+                            fontSize = 11.5.sp,
+                            color = colors.onBackground.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+
+                Switch(
+                    checked = userPreferences.isBiometricEnabled,
+                    onCheckedChange = { enabled ->
+                        coroutineScope.launch {
+                            preferencesRepository.setBiometricEnabled(enabled)
+                        }
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = colors.background,
+                        checkedTrackColor = colors.primary
+                    )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Screenshot Protection Toggle
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = colors.surface)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Icon(
+                        imageVector = Icons.Rounded.VisibilityOff,
+                        contentDescription = null,
+                        tint = colors.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Screenshot & Recents Protection",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colors.onBackground
+                        )
+                        Text(
+                            text = "Block screenshots and obscure app in recents overview",
+                            fontSize = 11.5.sp,
+                            color = colors.onBackground.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+
+                Switch(
+                    checked = userPreferences.isHideBalancesInRecents,
+                    onCheckedChange = { hide ->
+                        coroutineScope.launch {
+                            preferencesRepository.setHideBalancesInRecents(hide)
+                        }
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = colors.background,
+                        checkedTrackColor = colors.primary
+                    )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // --- THEME PRESETS ---
         Text(
             text = "THEME & APPEARANCE",
             fontSize = 11.sp,
@@ -192,7 +487,7 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // UI Density Section
+        // --- UI DENSITY ---
         Text(
             text = "LAYOUT DENSITY",
             fontSize = 11.sp,
@@ -253,5 +548,17 @@ fun SettingsScreen(
         }
 
         Spacer(modifier = Modifier.height(40.dp))
+    }
+
+    if (showAddRuleSheet) {
+        AddRuleSheet(
+            availableCategories = categories,
+            onDismiss = { showAddRuleSheet = false },
+            onSaveRule = { newRule ->
+                coroutineScope.launch {
+                    ruleRepository?.insertRule(newRule)
+                }
+            }
+        )
     }
 }

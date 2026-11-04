@@ -10,9 +10,16 @@ import com.artha.database.entity.DebtPaymentEntity
 import com.artha.domain.CashFlowSummary
 import com.artha.domain.CategoryShare
 import com.artha.domain.EmiCalculator
+import com.artha.domain.IncomeDelta
+import com.artha.domain.OneTimeScenarioExpense
 import com.artha.domain.PeriodComparison
 import com.artha.domain.PrepaymentSimulationResult
+import com.artha.domain.RecurringExpenseDelta
 import com.artha.domain.ReportsEngine
+import com.artha.domain.SimulationParams
+import com.artha.domain.SimulationResult
+import com.artha.domain.SipAdjustment
+import com.artha.domain.WhatIfEngine
 import com.artha.model.DebtType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -115,6 +122,7 @@ class InsightViewModel(
 
     init {
         recomputeEmi()
+        recomputeWhatIf()
     }
 
     fun updateEmiInputs(
@@ -207,6 +215,90 @@ class InsightViewModel(
         viewModelScope.launch {
             debtLoanRepository.recordPayment(payment)
         }
+    }
+
+    // 6. What-If Financial Scenario Simulator
+    private val _selectedScenario = MutableStateFlow(0) // 0: Car, 1: Subscriptions+SIP, 2: Salary Hike
+    val selectedScenario: StateFlow<Int> = _selectedScenario.asStateFlow()
+
+    private val _whatIfResult = MutableStateFlow<SimulationResult?>(null)
+    val whatIfResult: StateFlow<SimulationResult?> = _whatIfResult.asStateFlow()
+
+    fun selectScenario(index: Int) {
+        _selectedScenario.value = index
+        recomputeWhatIf()
+    }
+
+    private fun recomputeWhatIf() {
+        val params = when (_selectedScenario.value) {
+            0 -> {
+                // Buy 15L Car
+                SimulationParams(
+                    initialNetWorthMinor = 2_000_000_00L, // ₹20 Lakhs
+                    initialLiquidSavingsMinor = 500_000_00L, // ₹5 Lakhs
+                    monthlyIncomeMinor = 120_000_00L, // ₹1.2 Lakhs
+                    monthlyExpenseMinor = 50_000_00L, // ₹50k
+                    annualInvestmentReturnRatePercent = 11.0,
+                    oneTimeExpenses = listOf(
+                        OneTimeScenarioExpense(
+                            title = "Buy ₹15L Car",
+                            totalAmountMinor = 1_500_000_00L,
+                            monthOffset = 1,
+                            downPaymentMinor = 300_000_00L,
+                            loanTenureMonths = 48,
+                            loanInterestRateAnnual = 9.0
+                        )
+                    )
+                )
+            }
+            1 -> {
+                // Cut Subscriptions & Boost SIP
+                SimulationParams(
+                    initialNetWorthMinor = 1_500_000_00L, // ₹15 Lakhs
+                    initialLiquidSavingsMinor = 300_000_00L, // ₹3 Lakhs
+                    monthlyIncomeMinor = 100_000_00L, // ₹1 Lakh
+                    monthlyExpenseMinor = 55_000_00L, // ₹55k
+                    annualInvestmentReturnRatePercent = 12.0,
+                    recurringExpenseDeltas = listOf(
+                        RecurringExpenseDelta(
+                            title = "Cut 3 Subscriptions",
+                            monthlyDeltaMinor = -1_500_00L
+                        )
+                    ),
+                    sipAdjustments = listOf(
+                        SipAdjustment(
+                            title = "Additional Monthly SIP",
+                            monthlySipMinor = 10_000_00L,
+                            expectedReturnRateAnnual = 12.0
+                        )
+                    )
+                )
+            }
+            else -> {
+                // 15% Salary Hike
+                SimulationParams(
+                    initialNetWorthMinor = 1_800_000_00L, // ₹18 Lakhs
+                    initialLiquidSavingsMinor = 400_000_00L,
+                    monthlyIncomeMinor = 120_000_00L,
+                    monthlyExpenseMinor = 55_000_00L,
+                    annualInvestmentReturnRatePercent = 11.0,
+                    incomeDeltas = listOf(
+                        IncomeDelta(
+                            title = "15% Salary Hike",
+                            monthlyDeltaMinor = 18_000_00L
+                        )
+                    ),
+                    sipAdjustments = listOf(
+                        SipAdjustment(
+                            title = "Divert 50% Hike to SIP",
+                            monthlySipMinor = 9_000_00L,
+                            expectedReturnRateAnnual = 12.0
+                        )
+                    )
+                )
+            }
+        }
+        _whatIfResult.value = WhatIfEngine.simulate(params, totalMonths = 60)
     }
 
     private fun getPreviousYearMonth(): String {

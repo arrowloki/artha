@@ -25,6 +25,16 @@ data class PrepaymentSimulationResult(
 
 class EmiCalculator {
 
+    companion object {
+        private val INSTANCE = EmiCalculator()
+
+        fun calculateMonthlyEmi(
+            principalMinor: Long,
+            annualInterestRatePercent: Double,
+            tenureMonths: Int
+        ): Long = INSTANCE.calculateMonthlyEmi(principalMinor, annualInterestRatePercent, tenureMonths)
+    }
+
     private val mc = MathContext(16, RoundingMode.HALF_EVEN)
 
     /**

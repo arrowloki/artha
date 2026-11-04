@@ -11,6 +11,7 @@ import com.artha.data.repository.BudgetRepository
 import com.artha.data.repository.CategoryRepository
 import com.artha.data.repository.GoalRepository
 import com.artha.data.repository.RecurringRuleRepository
+import com.artha.data.repository.RuleRepository
 import com.artha.data.repository.TransactionRepository
 import com.artha.data.worker.RecurringTransactionWorker
 import com.artha.database.ArthaDatabase
@@ -18,6 +19,7 @@ import com.artha.database.entity.AccountEntity
 import com.artha.database.entity.BillSubscriptionEntity
 import com.artha.database.entity.BudgetEntity
 import com.artha.database.entity.GoalEntity
+import com.artha.database.entity.RuleEntity
 import com.artha.data.repository.DebtLoanRepository
 import com.artha.database.entity.DebtLoanEntity
 import com.artha.model.DebtType
@@ -63,6 +65,9 @@ class ArthaApp : Application() {
     lateinit var debtLoanRepository: DebtLoanRepository
         private set
 
+    lateinit var ruleRepository: RuleRepository
+        private set
+
     override fun onCreate() {
         super.onCreate()
         instance = this
@@ -80,6 +85,7 @@ class ArthaApp : Application() {
         goalRepository = GoalRepository(database)
         recurringRuleRepository = RecurringRuleRepository(database)
         debtLoanRepository = DebtLoanRepository(database)
+        ruleRepository = RuleRepository(database)
 
         // Schedule WorkManager for recurring entries
         val recurringWork = PeriodicWorkRequestBuilder<RecurringTransactionWorker>(1, TimeUnit.DAYS).build()
@@ -95,6 +101,7 @@ class ArthaApp : Application() {
             seedStarterAccountsIfEmpty()
             seedStarterPlanningIfEmpty()
             seedStarterDebtsIfEmpty()
+            seedStarterRulesIfEmpty()
         }
     }
 
@@ -227,6 +234,45 @@ class ArthaApp : Application() {
                 )
             )
             sampleDebts.forEach { debtLoanRepository.saveDebt(it) }
+        }
+    }
+
+    private suspend fun seedStarterRulesIfEmpty() {
+        val rules = ruleRepository.getActiveRules()
+        if (rules.isEmpty()) {
+            val starterRules = listOf(
+                RuleEntity(
+                    id = "rule_starbucks",
+                    name = "Starbucks to Coffee & Dining",
+                    conditionField = "MERCHANT",
+                    conditionOperator = "CONTAINS",
+                    conditionValue = "Starbucks",
+                    actionField = "SET_CATEGORY",
+                    actionValue = "cat_food_dining",
+                    priority = 10
+                ),
+                RuleEntity(
+                    id = "rule_uber",
+                    name = "Uber to Transport & Fuel",
+                    conditionField = "MERCHANT",
+                    conditionOperator = "CONTAINS",
+                    conditionValue = "Uber",
+                    actionField = "SET_CATEGORY",
+                    actionValue = "cat_transport",
+                    priority = 20
+                ),
+                RuleEntity(
+                    id = "rule_large_spend",
+                    name = "Flag Outliers Above ₹50,000",
+                    conditionField = "AMOUNT",
+                    conditionOperator = "GREATER_THAN",
+                    conditionValue = "5000000",
+                    actionField = "EXCLUDE_FROM_BUDGET",
+                    actionValue = "true",
+                    priority = 30
+                )
+            )
+            starterRules.forEach { ruleRepository.insertRule(it) }
         }
     }
 

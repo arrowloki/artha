@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalance
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
@@ -82,6 +83,8 @@ fun FastAddTransactionSheet(
     val categories by viewModel.categories.collectAsState()
 
     var showNoteField by remember { mutableStateOf(false) }
+    var showMagicInput by remember { mutableStateOf(false) }
+    var magicSentence by remember { mutableStateOf("") }
 
     // Default accounts if not selected
     val activeAccount = accounts.firstOrNull { it.id == selectedAccountId } ?: accounts.firstOrNull()
@@ -211,7 +214,76 @@ fun FastAddTransactionSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Magic Sentence Input Toggle
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(colors.surfaceVariant.copy(alpha = 0.5f))
+                        .clickable { showMagicInput = !showMagicInput }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.AutoAwesome,
+                            contentDescription = "Magic Sentence",
+                            tint = colors.primary,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Text(
+                            text = if (showMagicInput) "Hide Magic Input" else "Magic Input: e.g. 45 coffee at blue tokai card",
+                            fontSize = 12.sp,
+                            color = colors.primary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+
+            AnimatedVisibility(visible = showMagicInput) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 6.dp)
+                ) {
+                    OutlinedTextField(
+                        value = magicSentence,
+                        onValueChange = {
+                            magicSentence = it
+                            viewModel.applyNaturalLanguageSentence(it)
+                        },
+                        placeholder = {
+                            Text(
+                                text = "e.g. ₹250 groceries at nature basket upi",
+                                fontSize = 13.sp,
+                                color = colors.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = colors.surface,
+                            unfocusedContainerColor = colors.surface,
+                            focusedIndicatorColor = colors.primary,
+                            unfocusedIndicatorColor = colors.surfaceVariant
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Account & Destination Selectors
             Row(

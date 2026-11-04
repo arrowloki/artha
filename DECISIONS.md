@@ -115,5 +115,20 @@
   - Segregates money lent (personal assets owed to user) from money borrowed and EMI loans (liabilities).
   - Offers instant 1-tap "Settle Up" action to record repayments and adjust debt balances.
 
+---
+
+## 11. Milestone 5: Standout Features (Sentence Parser, What-If Simulation & Rules Engine)
+- **Decision: Natural Language Sentence Parser (`SentenceParser`)**:
+  - Parses freeform English financial sentences (e.g. `"45 coffee at blue tokai card"`, `"₹250 groceries at nature basket upi"`, `"salary 85000 bank"`) into structured transaction properties: amount in minor units (supporting `k`, `L`/`lakh`, `cr`/`crore`), currency, transaction type, category, merchant, payment method, and relative dates (`yesterday`, `today`).
+  - Integrated directly into `FastAddTransactionSheet` with real-time text reactive evaluation.
+- **Decision: Multi-Year What-If Scenario Simulation (`WhatIfEngine`)**:
+  - Projects financial balance sheets over 12, 36, and 60 months with compound investment growth ($r = (1 + R)^{1/12} - 1$).
+  - Compares status-quo baseline vs simulated scenarios: one-time purchases with debt financing (e.g. "Buy a ₹15L Car"), subscription cancellations, SIP increases, and salary hikes.
+  - Calculates milestone net worth deltas ($\Delta NW$), monthly cash flow impacts, liquid emergency runway months, and breakeven crossover points.
+- **Decision: Smart Rules Engine (`RulesEngine` & `RuleRepository`)**:
+  - Evaluates configurable conditions (`MERCHANT`, `AMOUNT`, `NOTE`, `PAYMENT_METHOD`) using operators (`CONTAINS`, `EQUALS`, `GREATER_THAN`, `LESS_THAN`, `REGEX`) and executes automated actions (`SET_CATEGORY`, `SET_PAYMENT_METHOD`, `EXCLUDE_FROM_BUDGET`, `EXCLUDE_FROM_REPORTS`).
+  - Auto-evaluates on new transactions upon insertion and supports historical batch re-running with automatic incremental category aggregate synchronization.
+
+
 
 

@@ -8,6 +8,7 @@ import com.artha.data.repository.TransactionRepository
 import com.artha.database.entity.AccountEntity
 import com.artha.database.entity.CategoryEntity
 import com.artha.database.entity.TransactionEntity
+import com.artha.domain.SentenceParser
 import com.artha.model.CurrencyConfig
 import com.artha.model.Money
 import com.artha.model.PaymentMethod
@@ -187,6 +188,31 @@ class TransactionsViewModel(
 
     fun setSplits(splits: List<SplitInput>) {
         _addSplits.value = splits
+    }
+
+    fun applyNaturalLanguageSentence(sentence: String) {
+        val currency = accounts.value.firstOrNull { it.id == _addAccountId.value }?.currency ?: "INR"
+        val parsed = SentenceParser.parse(sentence, categories.value, currency)
+        val parsedAmount = parsed.amountMinor
+        if (parsedAmount != null && parsedAmount > 0) {
+            val config = CurrencyConfig.forCode(parsed.currencyCode)
+            val plain = BigDecimal(parsedAmount).movePointLeft(config.decimalPlaces).stripTrailingZeros().toPlainString()
+            _addExpression.value = plain
+            _addEvaluatedAmountMinor.value = parsedAmount
+        }
+        _addType.value = parsed.type
+        val parsedCatId = parsed.categoryId
+        if (parsedCatId != null) {
+            _addCategoryId.value = parsedCatId
+        }
+        val parsedMethod = parsed.paymentMethod
+        if (parsedMethod != null) {
+            _addPaymentMethod.value = parsedMethod
+        }
+        if (!parsed.merchant.isNullOrBlank() || parsed.note.isNotBlank()) {
+            _addNote.value = parsed.merchant ?: parsed.note
+        }
+        _addTimestamp.value = parsed.timestamp
     }
 
     /**

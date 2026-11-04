@@ -38,6 +38,9 @@ abstract class TransactionDao {
     @Query("SELECT * FROM transactions WHERE category_id = :categoryId ORDER BY timestamp DESC")
     abstract fun getTransactionsByCategoryFlow(categoryId: String): Flow<List<TransactionEntity>>
 
+    @Query("SELECT * FROM transactions ORDER BY timestamp DESC")
+    abstract suspend fun getAllTransactions(): List<TransactionEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun insertTransactionRaw(transaction: TransactionEntity)
 
