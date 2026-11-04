@@ -81,3 +81,21 @@
 - **Decision: First-Launch Zero-Friction Seeding**:
   - To prevent empty-state paralysis, `ArthaApp` asynchronously seeds realistic starter categories (Food, Groceries, Shopping, Transport, Bills, Salary, etc.) and accounts (Bank, Cash, Credit Card) on first launch.
 
+---
+
+## 9. Milestone 3: Planning, Budgets, Subscriptions & WorkManager
+- **Decision: Safe-To-Spend Daily Allowance Engine (`BudgetEngine`)**:
+  - Automatically calculates remaining envelope allowances divided by days remaining in the billing period.
+  - Returns positive real-time daily spending limits and gracefully handles over-budget states (displaying 0 allowance with alert badge).
+  - Supports configurable alert thresholds (e.g., warning at 80% and alarm at 100%).
+- **Decision: Subscription Annualization & Rollup (`SubscriptionCalculator`)**:
+  - Standardizes irregular billing frequencies (Daily, Weekly, Monthly, Quarterly, Yearly) into a unified Annual Cost Rollup and Monthly Equivalent.
+  - Automatically checks renewal proximities (warning at 7 days) and impending free trial expirations (warning at 3 days) with direct deep-links to cancellation URLs.
+- **Decision: Background Processing with WorkManager (`RecurringTransactionWorker`)**:
+  - Uses AndroidX `WorkManager` with `ExistingPeriodicWorkPolicy.KEEP` running a daily background check.
+  - When auto-apply recurring rules are due, automatically commits the ledger transaction and advances the rule's next due date via `RecurringScheduleCalculator`.
+- **Decision: Sinking Funds & Savings Goals**:
+  - Tracked as progress envelopes towards a future target date.
+  - Provides instant 1-tap contribution buttons to accelerate wealth accumulation.
+
+

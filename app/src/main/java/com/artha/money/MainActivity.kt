@@ -9,15 +9,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.AccountBalance
-import androidx.compose.material.icons.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.TrackChanges
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -26,7 +26,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,12 +33,13 @@ import androidx.core.view.WindowCompat
 import com.artha.data.preferences.UserPreferences
 import com.artha.feature.accounts.AccountsViewModel
 import com.artha.feature.accounts.list.AccountListScreen
+import com.artha.feature.planning.PlanningScreen
+import com.artha.feature.planning.PlanningViewModel
 import com.artha.feature.transactions.TransactionsViewModel
 import com.artha.feature.transactions.list.TransactionListScreen
 import com.artha.money.settings.SettingsScreen
 import com.artha.ui.theme.ArthaTheme
 import com.artha.ui.theme.LocalArthaColors
-import com.artha.ui.theme.LocalArthaDensity
 import com.artha.ui.theme.ThemeMode
 import com.artha.ui.theme.UiDensity
 
@@ -102,9 +102,21 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
+                val planningViewModel = remember {
+                    PlanningViewModel(
+                        budgetRepository = app.budgetRepository,
+                        billSubscriptionRepository = app.billSubscriptionRepository,
+                        goalRepository = app.goalRepository,
+                        categoryRepository = app.categoryRepository,
+                        transactionRepository = app.transactionRepository,
+                        accountRepository = app.accountRepository
+                    )
+                }
+
                 MainAppScreen(
                     txViewModel = txViewModel,
                     accountsViewModel = accountsViewModel,
+                    planningViewModel = planningViewModel,
                     userPreferences = userPrefs,
                     preferencesRepository = prefsRepo
                 )
@@ -117,6 +129,7 @@ class MainActivity : ComponentActivity() {
 fun MainAppScreen(
     txViewModel: TransactionsViewModel,
     accountsViewModel: AccountsViewModel,
+    planningViewModel: PlanningViewModel,
     userPreferences: UserPreferences,
     preferencesRepository: com.artha.data.preferences.UserPreferencesRepository
 ) {
@@ -124,9 +137,10 @@ fun MainAppScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
 
     val navItems = listOf(
-        Triple("Transactions", Icons.Rounded.ReceiptLong, 0),
+        Triple("Transactions", Icons.AutoMirrored.Rounded.ReceiptLong, 0),
         Triple("Accounts", Icons.Rounded.AccountBalance, 1),
-        Triple("Settings", Icons.Rounded.Settings, 2)
+        Triple("Planning", Icons.Rounded.TrackChanges, 2),
+        Triple("Settings", Icons.Rounded.Settings, 3)
     )
 
     Scaffold(
@@ -174,7 +188,8 @@ fun MainAppScreen(
             when (selectedTab) {
                 0 -> TransactionListScreen(viewModel = txViewModel)
                 1 -> AccountListScreen(viewModel = accountsViewModel)
-                2 -> SettingsScreen(
+                2 -> PlanningScreen(viewModel = planningViewModel)
+                3 -> SettingsScreen(
                     userPreferences = userPreferences,
                     preferencesRepository = preferencesRepository
                 )
