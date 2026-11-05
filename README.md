@@ -11,10 +11,11 @@
 
 Pre-built, pre-signed Android APK packages are ready to install on any Android 8.0+ (API 26+) phone:
 
-- **[Download Signed Release APK (Recommended - 26 MB)](builds/artha-release-signed.apk)**
-- **[Download Debug APK (35 MB)](builds/artha-debug.apk)**
+- **[Download Signed Release APK v1.0.1 (Direct APK Download)](https://github.com/arrowloki/artha/releases/download/v1.0.1/artha-release-signed.apk)**
+- **[Download Debug APK v1.0.1](https://github.com/arrowloki/artha/releases/download/v1.0.1/artha-debug.apk)**
+- **[GitHub Release v1.0.1 Page](https://github.com/arrowloki/artha/releases/tag/v1.0.1)**
 
-*To install:* Download the APK onto your phone, tap to open, and allow *"Install from this source"* if prompted by Android.
+*To install:* Download the APK directly to your phone browser, tap to open the downloaded file, and allow *"Install unknown apps / Install from this source"* if prompted by Android.
 
 ---
 
