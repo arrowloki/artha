@@ -76,14 +76,26 @@ class ArthaApp : Application() {
         super.onCreate()
         instance = this
 
-        // Initialize encrypted Room database
-        database = ArthaDatabase.getInstance(this, useEncryption = true)
+        // Install uncaught exception handler to log fatal issues
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            android.util.Log.e("ArthaCrash", "Fatal exception in thread ${thread.name}: ${throwable.message}", throwable)
+            defaultHandler?.uncaughtException(thread, throwable)
+        }
+
+        // Initialize Room database with fallback
+        try {
+            database = ArthaDatabase.getInstance(this, useEncryption = true)
+        } catch (e: Throwable) {
+            android.util.Log.e("ArthaApp", "Fatal error initializing encrypted database, falling back to standard Room", e)
+            database = ArthaDatabase.getInstance(this, useEncryption = false)
+        }
 
         // Initialize repositories
+        preferencesRepository = UserPreferencesRepository(this)
         accountRepository = AccountRepository(database)
         categoryRepository = CategoryRepository(database)
         transactionRepository = TransactionRepository(database)
-        preferencesRepository = UserPreferencesRepository(this)
         budgetRepository = BudgetRepository(database)
         billSubscriptionRepository = BillSubscriptionRepository(database)
         goalRepository = GoalRepository(database)
@@ -92,21 +104,29 @@ class ArthaApp : Application() {
         ruleRepository = RuleRepository(database)
         dataTransferRepository = DataTransferRepository(database, transactionRepository)
 
-        // Schedule WorkManager for recurring entries
-        val recurringWork = PeriodicWorkRequestBuilder<RecurringTransactionWorker>(1, TimeUnit.DAYS).build()
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "artha_recurring_transactions",
-            ExistingPeriodicWorkPolicy.KEEP,
-            recurringWork
-        )
+        // Safely schedule WorkManager for recurring entries
+        try {
+            val recurringWork = PeriodicWorkRequestBuilder<RecurringTransactionWorker>(1, TimeUnit.DAYS).build()
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "artha_recurring_transactions",
+                ExistingPeriodicWorkPolicy.KEEP,
+                recurringWork
+            )
+        } catch (e: Throwable) {
+            android.util.Log.w("ArthaApp", "WorkManager recurring transaction scheduling failed", e)
+        }
 
         // Asynchronously seed default categories, starter accounts & planning if empty
         CoroutineScope(Dispatchers.IO).launch {
-            categoryRepository.seedDefaultCategoriesIfEmpty()
-            seedStarterAccountsIfEmpty()
-            seedStarterPlanningIfEmpty()
-            seedStarterDebtsIfEmpty()
-            seedStarterRulesIfEmpty()
+            try {
+                categoryRepository.seedDefaultCategoriesIfEmpty()
+                seedStarterAccountsIfEmpty()
+                seedStarterPlanningIfEmpty()
+                seedStarterDebtsIfEmpty()
+                seedStarterRulesIfEmpty()
+            } catch (e: Throwable) {
+                android.util.Log.e("ArthaApp", "Async data seeding failed", e)
+            }
         }
     }
 

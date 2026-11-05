@@ -190,26 +190,41 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun promptBiometrics(onSuccess: () -> Unit) {
-        val executor = ContextCompat.getMainExecutor(this)
-        val prompt = BiometricPrompt(
-            this,
-            executor,
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    super.onAuthenticationSucceeded(result)
-                    onSuccess()
-                }
+        try {
+            val authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                    BiometricManager.Authenticators.DEVICE_CREDENTIAL
+            val canAuth = BiometricManager.from(this).canAuthenticate(authenticators)
+            if (canAuth != BiometricManager.BIOMETRIC_SUCCESS) {
+                // If the device does not have biometrics/credentials enrolled or supported, bypass lock to avoid lock-out
+                onSuccess()
+                return
             }
-        )
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Unlock Artha")
-            .setSubtitle("Authenticate to access your private encrypted ledger")
-            .setAllowedAuthenticators(
-                BiometricManager.Authenticators.BIOMETRIC_STRONG or
-                BiometricManager.Authenticators.DEVICE_CREDENTIAL
+
+            val executor = ContextCompat.getMainExecutor(this)
+            val prompt = BiometricPrompt(
+                this,
+                executor,
+                object : BiometricPrompt.AuthenticationCallback() {
+                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                        super.onAuthenticationSucceeded(result)
+                        onSuccess()
+                    }
+
+                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                        super.onAuthenticationError(errorCode, errString)
+                    }
+                }
             )
-            .build()
-        prompt.authenticate(promptInfo)
+            val promptInfo = BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Unlock Artha")
+                .setSubtitle("Authenticate to access your private encrypted ledger")
+                .setAllowedAuthenticators(authenticators)
+                .build()
+            prompt.authenticate(promptInfo)
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Biometric authentication failed to initialize", e)
+            onSuccess()
+        }
     }
 }
 

@@ -79,28 +79,41 @@ abstract class ArthaDatabase : RoomDatabase() {
 
     companion object {
         const val DATABASE_NAME = "artha_encrypted.db"
+        private const val TAG = "ArthaDatabase"
 
         @Volatile
         private var INSTANCE: ArthaDatabase? = null
 
         fun getInstance(context: Context, useEncryption: Boolean = true): ArthaDatabase {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: buildDatabase(context.applicationContext, useEncryption).also { INSTANCE = it }
+                INSTANCE ?: try {
+                    buildDatabase(context.applicationContext, useEncryption).also { INSTANCE = it }
+                } catch (e: Throwable) {
+                    android.util.Log.e(TAG, "Failed to initialize encrypted database; falling back to unencrypted Room", e)
+                    buildDatabase(context.applicationContext, useEncryption = false).also { INSTANCE = it }
+                }
             }
         }
 
         fun buildDatabase(context: Context, useEncryption: Boolean = true): ArthaDatabase {
+            val dbName = if (useEncryption) DATABASE_NAME else "artha_standard.db"
             val builder = Room.databaseBuilder(
                 context,
                 ArthaDatabase::class.java,
-                DATABASE_NAME
-            ).setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
+                dbName
+            )
+                .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
+                .fallbackToDestructiveMigration()
 
             if (useEncryption) {
-                val keyManager = DatabaseKeyManager(context)
-                val passphrase = keyManager.getOrCreateDatabasePassphrase()
-                val factory = SupportFactory(passphrase)
-                builder.openHelperFactory(factory)
+                try {
+                    val keyManager = DatabaseKeyManager(context)
+                    val passphrase = keyManager.getOrCreateDatabasePassphrase()
+                    val factory = SupportFactory(passphrase)
+                    builder.openHelperFactory(factory)
+                } catch (e: Throwable) {
+                    android.util.Log.e(TAG, "SQLCipher factory initialization failed; proceeding unencrypted", e)
+                }
             }
 
             return builder.build()

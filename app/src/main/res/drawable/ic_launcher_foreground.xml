@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer Shield / Vault ring -->
+    <path
+        android:strokeColor="#10B981"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M54,28 C40,28 34,38 34,50 C34,68 54,80 54,80 C54,80 74,68 74,50 C74,38 68,28 54,28 Z" />
+    <!-- Artha 'A' & Rupee motif in burnished gold -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M54,36 L64,62 L58,62 L56,56 L52,56 L50,62 L44,62 Z M53,44 L51,51 L57,51 Z" />
+    <!-- Accent Sparkle -->
+    <path
+        android:fillColor="#34D399"
+        android:pathData="M66,38 L67,41 L70,42 L67,43 L66,46 L65,43 L62,42 L65,41 Z" />
+</vector>

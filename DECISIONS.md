@@ -153,6 +153,25 @@
 - **Decision: Release Verification**:
   - Verified with Room, SQLCipher, and Compose Proguard rules via `./gradlew assembleRelease` and `./gradlew assembleDebug`.
 
+---
+
+## 14. Device Compatibility & Startup Crash Resolution
+- **Root Cause 1: Theme Mismatch with `FragmentActivity`**:
+  - `MainActivity` extended `FragmentActivity` to host `BiometricPrompt`.
+  - Android Manifest declared `@android:style/Theme.Material.NoActionBar`, which is not an `AppCompat` descendant. When `FragmentActivity` and AppCompat delegates initialized on app start, Android threw `IllegalStateException: You need to use a Theme.AppCompat theme (or descendant) with this activity.`
+  - **Fix:** Added `Theme.Artha` extending `Theme.AppCompat.DayNight.NoActionBar` with transparent edge-to-edge system bars in `res/values/themes.xml` and `res/values-night/themes.xml`, and configured in `AndroidManifest.xml`.
+- **Root Cause 2: Android KeyStore and `EncryptedSharedPreferences` on OEM Devices**:
+  - `DatabaseKeyManager` initialized `MasterKey` and `EncryptedSharedPreferences` eagerly at property declaration time, using `java.util.Base64`.
+  - On OEM ROMs (POCO, Xiaomi MIUI/HyperOS, Samsung, custom ROMs), KeyStore initialization can throw `KeyStoreException` or `GeneralSecurityException`.
+  - **Fix:** Switched to `android.util.Base64` and made preferences lazy with a resilient `try-catch` fallback to sandboxed app-private `Context.MODE_PRIVATE` SharedPreferences.
+- **Root Cause 3: Room Database Initialization Fallback**:
+  - Added safety guard in `ArthaDatabase.getInstance()`: if SQLCipher native `.so` library or KeyStore fails for any device architecture reasons, it logs diagnostics and automatically falls back to standard Room SQLite so the application never crashes on launch.
+- **Root Cause 4: WorkManager and Application Startup Protection**:
+  - Shielded `WorkManager.getInstance()` and asynchronous initial data seeding inside `ArthaApp.onCreate()` with comprehensive exception handlers and installed a global `Thread.setDefaultUncaughtExceptionHandler` for logcat diagnostics.
+- **Root Cause 5: Launcher Adaptive Icons**:
+  - Replaced the platform system drawable `@android:drawable/sym_def_app_icon` with a dedicated adaptive vector icon (`ic_launcher.xml`, `ic_launcher_round.xml`, `ic_launcher_background.xml`, `ic_launcher_foreground.xml`) to prevent OEM launcher parsing errors.
+
+
 
 
 

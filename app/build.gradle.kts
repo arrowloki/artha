@@ -77,6 +77,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.8.2")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
 
     implementation("androidx.compose.ui:ui")
