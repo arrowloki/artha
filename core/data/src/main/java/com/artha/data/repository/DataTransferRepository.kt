@@ -190,6 +190,30 @@ class DataTransferRepository(
             }
         }
 
+        // Restore Transactions
+        if (root.has("transactions")) {
+            val txsArr = root.getJSONArray("transactions")
+            for (i in 0 until txsArr.length()) {
+                val o = txsArr.getJSONObject(i)
+                val tx = TransactionEntity(
+                    id = o.getString("id"),
+                    accountId = o.getString("accountId"),
+                    toAccountId = if (o.has("toAccountId") && !o.isNull("toAccountId")) o.getString("toAccountId") else null,
+                    categoryId = if (o.has("categoryId") && !o.isNull("categoryId")) o.getString("categoryId") else null,
+                    amountMinor = o.getLong("amountMinor"),
+                    currency = o.optString("currency", "INR"),
+                    type = runCatching { TransactionType.valueOf(o.getString("type")) }.getOrDefault(TransactionType.EXPENSE),
+                    paymentMethod = runCatching { PaymentMethod.valueOf(o.getString("paymentMethod")) }.getOrDefault(PaymentMethod.CASH),
+                    timestamp = o.getLong("timestamp"),
+                    note = o.optString("note", ""),
+                    status = TransactionStatus.COMPLETED,
+                    isReconciled = o.optBoolean("isReconciled", false)
+                )
+                transactionDao.insertTransactionRaw(tx)
+                count++
+            }
+        }
+
         return count
     }
 }

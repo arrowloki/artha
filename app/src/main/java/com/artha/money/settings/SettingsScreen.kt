@@ -1,6 +1,10 @@
 package com.artha.money.settings
 
+import android.accounts.AccountManager
+import android.app.Activity
 import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,15 +31,18 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.CloudDone
 import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.CloudUpload
+import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.Fingerprint
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.MonetizationOn
 import androidx.compose.material.icons.rounded.Rule
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material.icons.rounded.VpnKey
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -60,7 +67,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -74,6 +83,9 @@ import com.artha.feature.transactions.edit.CurrencyPickerDialog
 import com.artha.model.CurrencyConfig
 import com.artha.ui.theme.LocalArthaColors
 import com.artha.ui.theme.LocalArthaDensity
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -108,6 +120,129 @@ fun SettingsScreen(
     var googleAccountEmailInput by remember { mutableStateOf("") }
     var showRestoreDialog by remember { mutableStateOf(false) }
     var restoreJsonText by remember { mutableStateOf("") }
+
+    val clipboardManager = LocalClipboardManager.current
+    var showGoogleCloudConfigDialog by remember { mutableStateOf(false) }
+    var webClientIdInput by remember { mutableStateOf(userPreferences.googleWebClientId ?: "") }
+
+    // Native Android System Account Picker Launcher (Zero setup required)
+    val accountPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+            val accountName = result.data?.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
+            if (!accountName.isNullOrBlank()) {
+                coroutineScope.launch {
+                    preferencesRepository.linkGoogleAccount(accountName)
+                    transferMessage = "✅ Linked Google Account: $accountName"
+                }
+            }
+        }
+    }
+
+    // Google Play Services Auth Launcher (when OAuth Web Client ID is configured)
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                val email = account.email ?: account.displayName ?: "Connected Account"
+                coroutineScope.launch {
+                    preferencesRepository.linkGoogleAccount(email)
+                    transferMessage = "✅ Signed in with Google: $email"
+                }
+            } catch (e: ApiException) {
+                // If developer error (code 10), fallback immediately to native account picker
+                try {
+                    val intent = AccountManager.newChooseAccountIntent(
+                        null, null, arrayOf("com.google"), null, null, null, null
+                    )
+                    accountPickerLauncher.launch(intent)
+                } catch (_: Exception) {
+                    transferMessage = "⚠️ Google Play Services (${e.statusCode}): Setup Google Cloud Client ID."
+                    showGoogleCloudConfigDialog = true
+                }
+            }
+        }
+    }
+
+    // Storage Access Framework (SAF) - Direct Save to Google Drive / Files
+    val saveToDriveLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                try {
+                    val json = dataTransferRepository?.exportFullJsonBackup() ?: "{}"
+                    context.contentResolver.openOutputStream(uri)?.use { os ->
+                        os.write(json.toByteArray(Charsets.UTF_8))
+                        os.flush()
+                    }
+                    preferencesRepository.recordBackup()
+                    transferMessage = "✅ Successfully saved backup to Google Drive / Files!"
+                } catch (e: Exception) {
+                    transferMessage = "❌ Backup failed: ${e.localizedMessage}"
+                }
+            }
+        }
+    }
+
+    // Storage Access Framework (SAF) - Direct Restore from Google Drive / Files
+    val restoreFromDriveLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                try {
+                    val json = context.contentResolver.openInputStream(uri)?.use { isStream ->
+                        isStream.bufferedReader().readText()
+                    } ?: ""
+                    if (json.isNotBlank()) {
+                        val count = dataTransferRepository?.importJsonBackup(json) ?: 0
+                        transferMessage = "✅ Successfully restored $count items from Google Drive file!"
+                    } else {
+                        transferMessage = "⚠️ Selected backup file was empty."
+                    }
+                } catch (e: Exception) {
+                    transferMessage = "❌ Restore failed: ${e.localizedMessage}"
+                }
+            }
+        }
+    }
+
+    val triggerGoogleSignIn: () -> Unit = {
+        val webClientId = userPreferences.googleWebClientId
+        if (!webClientId.isNullOrBlank()) {
+            try {
+                val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                    .requestIdToken(webClientId)
+                    .requestEmail()
+                    .build()
+                val client = GoogleSignIn.getClient(context, gso)
+                googleSignInLauncher.launch(client.signInIntent)
+            } catch (e: Exception) {
+                try {
+                    val intent = AccountManager.newChooseAccountIntent(
+                        null, null, arrayOf("com.google"), null, null, null, null
+                    )
+                    accountPickerLauncher.launch(intent)
+                } catch (_: Exception) {
+                    showGoogleAccountDialog = true
+                }
+            }
+        } else {
+            try {
+                val intent = AccountManager.newChooseAccountIntent(
+                    null, null, arrayOf("com.google"), null, null, null, null
+                )
+                accountPickerLauncher.launch(intent)
+            } catch (e: Exception) {
+                showGoogleAccountDialog = true
+            }
+        }
+    }
 
     Column(
         modifier = modifier
@@ -178,13 +313,30 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // --- ACCOUNT & GOOGLE DRIVE CLOUD BACKUP ---
-        Text(
-            text = "ACCOUNT & GOOGLE DRIVE BACKUP",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = colors.onBackground.copy(alpha = 0.5f),
-            letterSpacing = 1.sp
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "ACCOUNT & GOOGLE DRIVE BACKUP",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = colors.onBackground.copy(alpha = 0.5f),
+                letterSpacing = 1.sp
+            )
+            IconButton(
+                onClick = { showGoogleCloudConfigDialog = true },
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Info,
+                    contentDescription = "Cloud Credentials Setup",
+                    tint = colors.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(8.dp))
 
         Card(
@@ -223,7 +375,7 @@ fun SettingsScreen(
                             color = colors.onBackground
                         )
                         Text(
-                            text = if (isLinked) userPreferences.linkedGoogleAccount!! else "Sign in to enable encrypted Google Drive backups",
+                            text = if (isLinked) userPreferences.linkedGoogleAccount!! else "Sign in to enable 1-tap Google Drive cloud sync",
                             fontSize = 11.5.sp,
                             color = colors.onBackground.copy(alpha = 0.6f)
                         )
@@ -234,6 +386,7 @@ fun SettingsScreen(
                             onClick = {
                                 coroutineScope.launch {
                                     preferencesRepository.unlinkGoogleAccount()
+                                    transferMessage = "Google Account unlinked."
                                 }
                             },
                             shape = RoundedCornerShape(10.dp)
@@ -242,7 +395,7 @@ fun SettingsScreen(
                         }
                     } else {
                         Button(
-                            onClick = { showGoogleAccountDialog = true },
+                            onClick = { triggerGoogleSignIn() },
                             shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
                         ) {
@@ -260,19 +413,8 @@ fun SettingsScreen(
                 ) {
                     Button(
                         onClick = {
-                            coroutineScope.launch {
-                                val json = dataTransferRepository?.exportFullJsonBackup() ?: ""
-                                preferencesRepository.recordBackup()
-                                transferMessage = "Backup generated! Opening Google Drive / Files save sheet…"
-                                val sendIntent = Intent().apply {
-                                    action = Intent.ACTION_SEND
-                                    putExtra(Intent.EXTRA_TEXT, json)
-                                    putExtra(Intent.EXTRA_TITLE, "Artha_Encrypted_Backup_${System.currentTimeMillis()}.json")
-                                    type = "application/json"
-                                }
-                                val shareIntent = Intent.createChooser(sendIntent, "Save Artha Backup to Google Drive / Files")
-                                context.startActivity(shareIntent)
-                            }
+                            val defaultName = "Artha_Encrypted_Backup_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())}.json"
+                            saveToDriveLauncher.launch(defaultName)
                         },
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = colors.primary.copy(alpha = 0.15f)),
@@ -284,13 +426,91 @@ fun SettingsScreen(
                     }
 
                     OutlinedButton(
-                        onClick = { showRestoreDialog = true },
+                        onClick = {
+                            restoreFromDriveLauncher.launch(arrayOf("application/json", "*/*"))
+                        },
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(Icons.Rounded.Sync, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("Restore Data", fontSize = 12.sp)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Secondary options: Share sheet & Manual JSON paste
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Share via App / Email",
+                        fontSize = 11.sp,
+                        color = colors.primary,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable {
+                                coroutineScope.launch {
+                                    val json = dataTransferRepository?.exportFullJsonBackup() ?: ""
+                                    preferencesRepository.recordBackup()
+                                    val sendIntent = Intent().apply {
+                                        action = Intent.ACTION_SEND
+                                        putExtra(Intent.EXTRA_TEXT, json)
+                                        putExtra(Intent.EXTRA_TITLE, "Artha_Encrypted_Backup_${System.currentTimeMillis()}.json")
+                                        type = "application/json"
+                                    }
+                                    val shareIntent = Intent.createChooser(sendIntent, "Share Artha Backup")
+                                    context.startActivity(shareIntent)
+                                }
+                            }
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+
+                    Text(
+                        text = "Paste JSON Manually",
+                        fontSize = 11.sp,
+                        color = colors.onBackground.copy(alpha = 0.6f),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable { showRestoreDialog = true }
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+                }
+
+                // Status transferMessage alert banner
+                if (transferMessage != null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF10B981).copy(alpha = 0.12f))
+                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = transferMessage!!,
+                                fontSize = 11.5.sp,
+                                color = Color(0xFF10B981),
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = "✕",
+                                fontSize = 12.sp,
+                                color = colors.onBackground.copy(alpha = 0.6f),
+                                modifier = Modifier
+                                    .clickable { transferMessage = null }
+                                    .padding(start = 6.dp)
+                            )
+                        }
                     }
                 }
 
@@ -987,7 +1207,142 @@ fun SettingsScreen(
         )
     }
 
-    // Google Account Sign-In Dialog
+    // Google Cloud OAuth Credentials & Keys Setup Dialog
+    if (showGoogleCloudConfigDialog) {
+        AlertDialog(
+            onDismissRequest = { showGoogleCloudConfigDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.Info,
+                        contentDescription = null,
+                        tint = colors.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Google Sign-In & Drive Setup",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onBackground
+                    )
+                }
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Artha supports 1-tap native device account selection automatically. To connect official Google Play Services OAuth ID tokens or custom Google Cloud Drive sync, register this app in your Google Cloud Console:",
+                        fontSize = 12.sp,
+                        color = colors.onBackground.copy(alpha = 0.7f),
+                        lineHeight = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Package Name Card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = colors.surfaceVariant)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Package Name", fontSize = 10.sp, color = colors.onSurfaceVariant.copy(alpha = 0.6f))
+                                Text("com.artha.money", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+                            }
+                            IconButton(
+                                onClick = {
+                                    clipboardManager.setText(AnnotatedString("com.artha.money"))
+                                    transferMessage = "Copied package name to clipboard"
+                                },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(Icons.Rounded.ContentCopy, contentDescription = "Copy", tint = colors.primary, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // SHA-1 Card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = colors.surfaceVariant)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Keystore SHA-1 Fingerprint", fontSize = 10.sp, color = colors.onSurfaceVariant.copy(alpha = 0.6f))
+                                Text("B5:30:88:2A:98:73:E7:B2:01:68:B0:4F:89:21:4F:C0:25:14:A3:30", fontSize = 10.5.sp, fontWeight = FontWeight.Medium, color = colors.onBackground)
+                            }
+                            IconButton(
+                                onClick = {
+                                    clipboardManager.setText(AnnotatedString("B5:30:88:2A:98:73:E7:B2:01:68:B0:4F:89:21:4F:C0:25:14:A3:30"))
+                                    transferMessage = "Copied SHA-1 fingerprint to clipboard"
+                                },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(Icons.Rounded.ContentCopy, contentDescription = "Copy", tint = colors.primary, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Optional Web Client ID Input
+                    Text(
+                        text = "Google Cloud Web Client ID (Optional):",
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.onBackground
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = webClientIdInput,
+                        onValueChange = { webClientIdInput = it },
+                        placeholder = { Text("e.g. 123456-abc.apps.googleusercontent.com", fontSize = 11.sp) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            preferencesRepository.updateGoogleWebClientId(webClientIdInput)
+                            showGoogleCloudConfigDialog = false
+                            transferMessage = if (webClientIdInput.isNotBlank()) "Google Web Client ID saved!" else "Cleared custom Web Client ID."
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
+                ) {
+                    Text("Save", color = colors.onPrimary, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showGoogleCloudConfigDialog = false }) {
+                    Text("Close")
+                }
+            },
+            containerColor = colors.surface,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    // Google Account Sign-In Dialog (Fallback)
     if (showGoogleAccountDialog) {
         AlertDialog(
             onDismissRequest = { showGoogleAccountDialog = false },
@@ -1011,12 +1366,35 @@ fun SettingsScreen(
             text = {
                 Column {
                     Text(
-                        text = "Connect your Google account to automatically sync encrypted ledger snapshots to your personal Google Drive.",
+                        text = "Choose your Google Account to connect Artha for encrypted snapshots and Drive sync.",
                         fontSize = 12.sp,
                         color = colors.onBackground.copy(alpha = 0.7f),
                         lineHeight = 16.sp
                     )
                     Spacer(modifier = Modifier.height(14.dp))
+
+                    Button(
+                        onClick = {
+                            showGoogleAccountDialog = false
+                            triggerGoogleSignIn()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Rounded.AccountCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("⚡ 1-Tap Device Account Picker", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Or enter your Google address manually:",
+                        fontSize = 11.sp,
+                        color = colors.onBackground.copy(alpha = 0.6f)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
                     OutlinedTextField(
                         value = googleAccountEmailInput,
                         onValueChange = { googleAccountEmailInput = it },
@@ -1025,27 +1403,12 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp)
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Button(
-                        onClick = {
-                            coroutineScope.launch {
-                                preferencesRepository.linkGoogleAccount("user.lokesh@gmail.com")
-                                showGoogleAccountDialog = false
-                                transferMessage = "Connected to Google Account user.lokesh@gmail.com"
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("⚡ Fast 1-Tap Link with Device Account", fontSize = 11.5.sp, color = colors.primary, fontWeight = FontWeight.SemiBold)
-                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        val email = if (googleAccountEmailInput.isNotBlank()) googleAccountEmailInput.trim() else "user.lokesh@gmail.com"
+                        val email = if (googleAccountEmailInput.isNotBlank()) googleAccountEmailInput.trim() else "user@gmail.com"
                         coroutineScope.launch {
                             preferencesRepository.linkGoogleAccount(email)
                             showGoogleAccountDialog = false
@@ -1054,7 +1417,7 @@ fun SettingsScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
                 ) {
-                    Text("Connect", color = colors.onPrimary, fontWeight = FontWeight.Bold)
+                    Text("Link Account", color = colors.onPrimary, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -1090,20 +1453,36 @@ fun SettingsScreen(
             },
             text = {
                 Column {
+                    Button(
+                        onClick = {
+                            showRestoreDialog = false
+                            restoreFromDriveLauncher.launch(arrayOf("application/json", "*/*"))
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Rounded.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("📂 Select File from Google Drive / Storage", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
                     Text(
-                        text = "Paste your exported JSON ledger content below to restore all accounts, transactions, and categories.",
-                        fontSize = 12.sp,
+                        text = "Or paste raw JSON backup text below:",
+                        fontSize = 11.5.sp,
                         color = colors.onBackground.copy(alpha = 0.7f),
                         lineHeight = 16.sp
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = restoreJsonText,
                         onValueChange = { restoreJsonText = it },
                         placeholder = { Text("Paste JSON backup string here...") },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(140.dp),
+                            .height(130.dp),
                         shape = RoundedCornerShape(10.dp)
                     )
                 }
@@ -1113,7 +1492,8 @@ fun SettingsScreen(
                     onClick = {
                         coroutineScope.launch {
                             if (restoreJsonText.isNotBlank()) {
-                                transferMessage = "Restored ledger successfully from backup!"
+                                val count = dataTransferRepository?.importJsonBackup(restoreJsonText) ?: 0
+                                transferMessage = "✅ Restored $count items successfully from backup!"
                             }
                             showRestoreDialog = false
                             restoreJsonText = ""
@@ -1121,7 +1501,7 @@ fun SettingsScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
                 ) {
-                    Text("Restore", color = colors.onPrimary, fontWeight = FontWeight.Bold)
+                    Text("Restore JSON", color = colors.onPrimary, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {

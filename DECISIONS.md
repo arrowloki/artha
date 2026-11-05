@@ -194,6 +194,20 @@
 - **Decision: High-Contrast Category Visual Icons (`CategoryVisuals`)**:
   - Built `CategoryVisuals` mapping category entities and keywords to distinct vibrant icons (Restaurant 🍽️, Grocery 🛒, Shopping 🛍️, Car 🚗, Bills ⚡, Rent 🏠, Movie 🎬, Healthcare 🏥, Salary 💰, Investments 📈) and color-coded squircle containers.
 
+---
+
+## 16. Milestone 10: Real Native Google Account Chooser & SAF Google Drive Storage Integration
+- **Context & User Feedback:**
+  - Users expected standard Google Sign-In behavior (system account selection sheet) rather than manual text field entry, and true file-based Google Drive backup/restore.
+- **Architectural Solution:**
+  1. **Dual Google Sign-In Strategy:**
+     - **Native OS Account Picker (`AccountManager.newChooseAccountIntent`)**: Invokes Android's native system Google account picker (`allowableAccountTypes = arrayOf("com.google")`). Displays real device Google accounts (`@gmail.com`) in the system modal sheet with zero cloud setup, zero API keys, and zero configuration errors.
+     - **Google Play Services Auth (`play-services-auth:21.0.0`)**: Integrated `GoogleSignInClient` for users who wish to supply their Google Cloud OAuth Web Client ID.
+     - **OAuth Credentials & Diagnostic Modal (`showGoogleCloudConfigDialog`)**: Displays the app's verified `Package Name` (`com.artha.money`), `Keystore SHA-1` (`B5:30:88:2A:98:73:E7:B2:01:68:B0:4F:89:21:4F:C0:25:14:A3:30`), and `SHA-256`, with 1-click clipboard copy buttons and a persistent `googleWebClientId` input.
+  2. **Storage Access Framework (SAF) Direct Google Drive Integration:**
+     - **Backup (`ActivityResultContracts.CreateDocument("application/json")`)**: Opens Android's system file picker with Google Drive natively in the sidebar drawer, streaming the encrypted JSON backup directly into the chosen Google Drive folder or device storage.
+     - **Restore (`ActivityResultContracts.OpenDocument()`)**: Opens Android's file manager allowing the user to select backup files directly from Google Drive, restoring accounts, categories, rules, and all transactions atomically.
+
 
 
 

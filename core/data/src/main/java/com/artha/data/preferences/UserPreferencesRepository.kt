@@ -25,7 +25,8 @@ data class UserPreferences(
     val weekStartDay: Int = 2, // Monday
     val linkedGoogleAccount: String? = null,
     val lastBackupTimestamp: Long = 0L,
-    val isAutoDriveBackupEnabled: Boolean = false
+    val isAutoDriveBackupEnabled: Boolean = false,
+    val googleWebClientId: String? = null
 )
 
 class UserPreferencesRepository(private val context: Context) {
@@ -42,7 +43,8 @@ class UserPreferencesRepository(private val context: Context) {
             weekStartDay = prefs[KEY_WEEK_START_DAY] ?: 2,
             linkedGoogleAccount = prefs[KEY_GOOGLE_ACCOUNT],
             lastBackupTimestamp = prefs[KEY_LAST_BACKUP_TIMESTAMP] ?: 0L,
-            isAutoDriveBackupEnabled = prefs[KEY_AUTO_DRIVE_BACKUP] ?: false
+            isAutoDriveBackupEnabled = prefs[KEY_AUTO_DRIVE_BACKUP] ?: false,
+            googleWebClientId = prefs[KEY_GOOGLE_WEB_CLIENT_ID]
         )
     }
 
@@ -112,6 +114,16 @@ class UserPreferencesRepository(private val context: Context) {
         }
     }
 
+    suspend fun updateGoogleWebClientId(clientId: String?) {
+        context.dataStore.edit { prefs ->
+            if (clientId.isNullOrBlank()) {
+                prefs.remove(KEY_GOOGLE_WEB_CLIENT_ID)
+            } else {
+                prefs[KEY_GOOGLE_WEB_CLIENT_ID] = clientId.trim()
+            }
+        }
+    }
+
     companion object {
         private val KEY_BASE_CURRENCY = stringPreferencesKey("pref_base_currency")
         private val KEY_THEME_MODE = stringPreferencesKey("pref_theme_mode")
@@ -124,5 +136,6 @@ class UserPreferencesRepository(private val context: Context) {
         private val KEY_GOOGLE_ACCOUNT = stringPreferencesKey("pref_google_account")
         private val KEY_LAST_BACKUP_TIMESTAMP = longPreferencesKey("pref_last_backup_timestamp")
         private val KEY_AUTO_DRIVE_BACKUP = booleanPreferencesKey("pref_auto_drive_backup")
+        private val KEY_GOOGLE_WEB_CLIENT_ID = stringPreferencesKey("pref_google_web_client_id")
     }
 }

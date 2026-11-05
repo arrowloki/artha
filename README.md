@@ -11,15 +11,21 @@
 
 Pre-built, pre-signed Android APK packages are ready to install on any Android 8.0+ (API 26+) phone:
 
-- **[Download Signed Release APK v1.0.3 (Direct APK Download)](https://github.com/arrowloki/artha/releases/download/v1.0.3/artha-release-signed.apk)**
-- **[Download Debug APK v1.0.3](https://github.com/arrowloki/artha/releases/download/v1.0.3/artha-debug.apk)**
-- **[GitHub Release v1.0.3 Page](https://github.com/arrowloki/artha/releases/tag/v1.0.3)**
+- **[Download Signed Release APK v1.0.4 (Direct APK Download)](https://github.com/arrowloki/artha/releases/download/v1.0.4/artha-release-signed.apk)**
+- **[Download Debug APK v1.0.4](https://github.com/arrowloki/artha/releases/download/v1.0.4/artha-debug.apk)**
+- **[GitHub Release v1.0.4 Page](https://github.com/arrowloki/artha/releases/tag/v1.0.4)**
 
 *To install:* Download the APK directly to your phone browser, tap to open the downloaded file, and allow *"Install unknown apps / Install from this source"* if prompted by Android.
 
 ---
 
 ## 🌟 Key Features
+
+### ✨ New in v1.0.4
+- **Real 1-Tap Google Sign-In (Native Account Picker):** Tapping "Sign In" launches Android's native system Google account picker (`AccountManager`), allowing you to select your real device Google account (`@gmail.com`) in 1 tap without any manual text typing.
+- **Storage Access Framework (SAF) Google Drive Backup:** Tap "Backup to Drive" to directly select your personal Google Drive or phone folder via Android's native document creator, saving encrypted JSON ledger backups safely into Drive.
+- **Direct Google Drive Ledger Restore:** Tap "Restore Data" to browse Google Drive, select any previous snapshot, and atomically restore all transactions, accounts, categories, and rules.
+- **Google Cloud OAuth Diagnostics & Web Client ID:** View package name (`com.artha.money`) and verified Keystore SHA-1 (`B5:30:88:2A:98:73:E7:B2:01:68:B0:4F:89:21:4F:C0:25:14:A3:30`) with 1-click clipboard copy, and optionally input a custom Web Client ID for Google Play Services Auth.
 
 ### ✨ New in v1.0.3
 - **Google Account & Cloud Backup:** Link your Google Account directly in Settings. 1-tap encrypted snapshot export to Google Drive / Files (`application/json`), auto-backup toggle, last backup timestamp indicator, and full ledger restore flow.
