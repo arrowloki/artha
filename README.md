@@ -11,15 +11,22 @@
 
 Pre-built, pre-signed Android APK packages are ready to install on any Android 8.0+ (API 26+) phone:
 
-- **[Download Signed Release APK v1.0.2 (Direct APK Download)](https://github.com/arrowloki/artha/releases/download/v1.0.2/artha-release-signed.apk)**
-- **[Download Debug APK v1.0.2](https://github.com/arrowloki/artha/releases/download/v1.0.2/artha-debug.apk)**
-- **[GitHub Release v1.0.2 Page](https://github.com/arrowloki/artha/releases/tag/v1.0.2)**
+- **[Download Signed Release APK v1.0.3 (Direct APK Download)](https://github.com/arrowloki/artha/releases/download/v1.0.3/artha-release-signed.apk)**
+- **[Download Debug APK v1.0.3](https://github.com/arrowloki/artha/releases/download/v1.0.3/artha-debug.apk)**
+- **[GitHub Release v1.0.3 Page](https://github.com/arrowloki/artha/releases/tag/v1.0.3)**
 
 *To install:* Download the APK directly to your phone browser, tap to open the downloaded file, and allow *"Install unknown apps / Install from this source"* if prompted by Android.
 
 ---
 
 ## 🌟 Key Features
+
+### ✨ New in v1.0.3
+- **Google Account & Cloud Backup:** Link your Google Account directly in Settings. 1-tap encrypted snapshot export to Google Drive / Files (`application/json`), auto-backup toggle, last backup timestamp indicator, and full ledger restore flow.
+- **Global Currency Chooser:** Interactive currency selector supporting all major world currencies (`INR ₹`, `USD $`, `EUR €`, `GBP £`, `AED د.إ`, `SGD S$`, `CAD CA$`, `AUD A$`, `JPY ¥`, `CHF`, `SAR ﷼`, `CNY ¥`, `KWD KD`). Selectable per-transaction and globally in Settings.
+- **Edit Existing Transactions:** Tap any transaction in the list to open the bottom sheet editor. Update amount, date, transaction type, category, account, payment method, note, and custom tags with atomic aggregate recalculation.
+- **Custom Labels & Tags Engine:** Add and manage custom tags (`#Personal`, `#Work`, `#Vacation`, `#TaxSaver`, `#Family`, `#Reimbursable`, or custom inline tags). Tag badges are visibly displayed on each transaction card, and interactive tag filter chips allow 1-tap filtering.
+- **Visual Category Icons:** Transactions now display vibrant, color-coded squircle icons representing each expense type (🍽️ Food & Dining, 🛒 Groceries, 🛍️ Shopping, 🚗 Transport, ⚡ Bills & Utilities, 🏠 Housing, 🎬 Entertainment, 🏥 Health, 📚 Education, ✈️ Travel, 💰 Salary, 📈 Investment, 🔁 Transfers).
 
 ### 1. Zero Float/Double Minor Money Math
 - Monetary amounts are strictly stored as 64-bit integers (`Long`) in minor currency units (e.g. ₹100.00 = `10000L`).
