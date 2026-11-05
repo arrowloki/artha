@@ -120,9 +120,20 @@ class InsightViewModel(
     private val _emiSimulationState = MutableStateFlow(EmiSimulationState())
     val emiSimulationState: StateFlow<EmiSimulationState> = _emiSimulationState.asStateFlow()
 
+    // 6. What-If Financial Scenario Simulator State
+    private val _selectedScenario = MutableStateFlow(0) // 0: Car, 1: Subscriptions+SIP, 2: Salary Hike
+    val selectedScenario: StateFlow<Int> = _selectedScenario.asStateFlow()
+
+    private val _whatIfResult = MutableStateFlow<SimulationResult?>(null)
+    val whatIfResult: StateFlow<SimulationResult?> = _whatIfResult.asStateFlow()
+
     init {
-        recomputeEmi()
-        recomputeWhatIf()
+        try {
+            recomputeEmi()
+            recomputeWhatIf()
+        } catch (e: Throwable) {
+            android.util.Log.e("InsightViewModel", "Error in init recomputation", e)
+        }
     }
 
     fun updateEmiInputs(
@@ -217,20 +228,16 @@ class InsightViewModel(
         }
     }
 
-    // 6. What-If Financial Scenario Simulator
-    private val _selectedScenario = MutableStateFlow(0) // 0: Car, 1: Subscriptions+SIP, 2: Salary Hike
-    val selectedScenario: StateFlow<Int> = _selectedScenario.asStateFlow()
-
-    private val _whatIfResult = MutableStateFlow<SimulationResult?>(null)
-    val whatIfResult: StateFlow<SimulationResult?> = _whatIfResult.asStateFlow()
-
+    // 6. What-If Financial Scenario Simulator Actions
     fun selectScenario(index: Int) {
         _selectedScenario.value = index
         recomputeWhatIf()
     }
 
     private fun recomputeWhatIf() {
-        val params = when (_selectedScenario.value) {
+        try {
+            val scenarioIdx = _selectedScenario.value
+            val params = when (scenarioIdx) {
             0 -> {
                 // Buy 15L Car
                 SimulationParams(
@@ -299,6 +306,9 @@ class InsightViewModel(
             }
         }
         _whatIfResult.value = WhatIfEngine.simulate(params, totalMonths = 60)
+    } catch (e: Throwable) {
+        android.util.Log.e("InsightViewModel", "Error calculating what-if scenario", e)
+    }
     }
 
     private fun getPreviousYearMonth(): String {

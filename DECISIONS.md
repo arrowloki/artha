@@ -170,6 +170,12 @@
   - Shielded `WorkManager.getInstance()` and asynchronous initial data seeding inside `ArthaApp.onCreate()` with comprehensive exception handlers and installed a global `Thread.setDefaultUncaughtExceptionHandler` for logcat diagnostics.
 - **Root Cause 5: Launcher Adaptive Icons**:
   - Replaced the platform system drawable `@android:drawable/sym_def_app_icon` with a dedicated adaptive vector icon (`ic_launcher.xml`, `ic_launcher_round.xml`, `ic_launcher_background.xml`, `ic_launcher_foreground.xml`) to prevent OEM launcher parsing errors.
+- **Root Cause 6: Kotlin Initialization Order NullPointerException in `InsightViewModel`**:
+  - `InsightViewModel` invoked `recomputeWhatIf()` inside its `init` block at line 125.
+  - However, `_selectedScenario` and `_whatIfResult` were defined as properties at lines 221-225 (lexically below the `init` block). In Kotlin JVM bytecode, properties defined below `init` are initialized after `init` completes, leaving `_selectedScenario` as `null` during `init`.
+  - Calling `_selectedScenario.value` threw `java.lang.NullPointerException: Attempt to invoke interface method 'java.lang.Object kotlinx.coroutines.flow.MutableStateFlow.getValue()' on a null object reference`.
+  - **Fix:** Reordered all property definitions to precede the `init` block, wrapped init calculations in a `try-catch`, and added safety exception handling in `recomputeWhatIf()`.
+
 
 
 
