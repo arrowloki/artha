@@ -58,6 +58,7 @@ import com.artha.model.Money
 import com.artha.model.PaymentMethod
 import com.artha.model.TransactionType
 import com.artha.ui.components.MathKeypad
+import com.artha.ui.theme.CategoryVisuals
 import com.artha.ui.theme.LocalArthaColors
 import com.artha.ui.theme.LocalArthaDensity
 
@@ -349,16 +350,17 @@ fun FastAddTransactionSheet(
                     ) {
                         relevantCategories.forEach { cat ->
                             val isSelected = selectedCategoryId == cat.id
+                            val visual = CategoryVisuals.resolve(cat.id, cat.name, cat.iconName, cat.colorHex)
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(
-                                        if (isSelected) colors.primary.copy(alpha = 0.2f)
+                                        if (isSelected) visual.color.copy(alpha = 0.22f)
                                         else colors.surfaceVariant.copy(alpha = 0.4f)
                                     )
                                     .border(
-                                        width = 1.dp,
-                                        color = if (isSelected) colors.primary else colors.cardBorder,
+                                        width = if (isSelected) 1.5.dp else 0.5.dp,
+                                        color = if (isSelected) visual.color else colors.cardBorder,
                                         shape = RoundedCornerShape(12.dp)
                                     )
                                     .clickable {
@@ -367,12 +369,21 @@ fun FastAddTransactionSheet(
                                     }
                                     .padding(horizontal = 10.dp, vertical = 6.dp)
                             ) {
-                                Text(
-                                    text = cat.name,
-                                    fontSize = 12.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) colors.primary else colors.onSurface
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = visual.icon,
+                                        contentDescription = cat.name,
+                                        tint = if (isSelected) visual.color else colors.onSurface.copy(alpha = 0.7f),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = cat.name,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) visual.color else colors.onSurface
+                                    )
+                                }
                             }
                         }
                     }
@@ -407,6 +418,47 @@ fun FastAddTransactionSheet(
                             fontSize = 11.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                             color = if (isSelected) colors.primary else colors.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            // Custom Tags / Labels Quick Chips
+            val defaultTags = listOf("Personal", "Work", "Vacation", "TaxSaver", "Family", "Reimbursable")
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                defaultTags.forEach { tag ->
+                    val isTagInNote = note.contains("#$tag", ignoreCase = true)
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (isTagInNote) colors.primary.copy(alpha = 0.2f) else colors.surfaceVariant.copy(alpha = 0.25f))
+                            .border(
+                                width = 0.5.dp,
+                                color = if (isTagInNote) colors.primary else colors.cardBorder.copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .clickable {
+                                val updatedNote = if (isTagInNote) {
+                                    note.replace("#$tag", "").trim()
+                                } else {
+                                    if (note.isBlank()) "#$tag" else "$note #$tag"
+                                }
+                                viewModel.setAddNote(updatedNote)
+                            }
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = "#$tag",
+                            fontSize = 10.5.sp,
+                            fontWeight = if (isTagInNote) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isTagInNote) colors.primary else colors.onSurfaceVariant.copy(alpha = 0.7f)
                         )
                     }
                 }

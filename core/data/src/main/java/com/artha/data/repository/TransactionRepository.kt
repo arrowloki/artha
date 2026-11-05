@@ -47,6 +47,11 @@ class TransactionRepository(private val db: ArthaDatabase) {
         transactionDao.insertTransactionWithAggregates(processed, searchableText)
     }
 
+    suspend fun updateTransaction(original: TransactionEntity, updated: TransactionEntity, searchableText: String = "") {
+        transactionDao.deleteTransactionWithAggregates(original)
+        recordTransaction(updated, searchableText)
+    }
+
     suspend fun deleteTransaction(transaction: TransactionEntity) {
         transactionDao.deleteTransactionWithAggregates(transaction)
     }

@@ -176,6 +176,25 @@
   - Calling `_selectedScenario.value` threw `java.lang.NullPointerException: Attempt to invoke interface method 'java.lang.Object kotlinx.coroutines.flow.MutableStateFlow.getValue()' on a null object reference`.
   - **Fix:** Reordered all property definitions to precede the `init` block, wrapped init calculations in a `try-catch`, and added safety exception handling in `recomputeWhatIf()`.
 
+---
+
+## 15. Milestone 9: Cloud Backup, Currency Chooser, Transaction Editing, Custom Labels & Visual Category Icons
+- **Decision: Google Account & Cloud Backup Engine (`SettingsScreen` & `UserPreferences`)**:
+  - Integrated Google Account linking and automated encrypted Google Drive backups in Settings.
+  - Implemented 1-tap "Backup to Drive" triggering Android `ACTION_SEND` targeting Google Drive/Files with `application/json`, updating backup timestamps and providing full backup restoration dialogs.
+- **Decision: Global & Per-Transaction Currency Chooser (`CurrencyConfig` & `CurrencyPickerDialog`)**:
+  - Expanded `CurrencyConfig` to support all major global currencies (`INR`, `USD`, `EUR`, `GBP`, `AED`, `SGD`, `CAD`, `AUD`, `JPY`, `CHF`, `SAR`, `CNY`, `KWD`).
+  - Added primary currency chooser in Settings and interactive currency selector chip in transaction creation/editing sheets.
+- **Decision: In-Place Transaction Editing (`EditTransactionSheet` & `TransactionRepository.updateTransaction`)**:
+  - Added `EditTransactionSheet` allowing users to edit amount, date, type, category, account, payment method, note, and custom tags.
+  - `updateTransaction` atomically deletes previous aggregates and reapplies new transaction aggregates in Room WAL SQLite, preventing drift.
+- **Decision: Custom Labels / Tags Engine (`#tags` & Tag Filter Bar)**:
+  - Enabled custom hashtag extraction and dynamic label management (`#Personal`, `#Work`, `#Vacation`, `#TaxSaver`, `#Family`, `#Reimbursable`, plus inline custom tag creation).
+  - Added interactive tag filter chips to the transaction list header and visible label badges on each `TransactionCard`.
+- **Decision: High-Contrast Category Visual Icons (`CategoryVisuals`)**:
+  - Built `CategoryVisuals` mapping category entities and keywords to distinct vibrant icons (Restaurant 🍽️, Grocery 🛒, Shopping 🛍️, Car 🚗, Bills ⚡, Rent 🏠, Movie 🎬, Healthcare 🏥, Salary 💰, Investments 📈) and color-coded squircle containers.
+
+
 
 
 

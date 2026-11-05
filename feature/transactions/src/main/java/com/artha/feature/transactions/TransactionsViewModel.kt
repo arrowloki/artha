@@ -35,6 +35,7 @@ data class TransactionFilterState(
     val type: TransactionType? = null,
     val accountId: String? = null,
     val categoryId: String? = null,
+    val tag: String? = null,
     val startDate: Long? = null,
     val endDate: Long? = null
 )
@@ -282,6 +283,15 @@ class TransactionsViewModel(
         lastDeletedTransaction = null
     }
 
+    fun updateExistingTransaction(original: TransactionEntity, updated: TransactionEntity, onSaved: () -> Unit = {}) {
+        viewModelScope.launch {
+            val account = accounts.value.firstOrNull { it.id == updated.accountId }
+            val searchableText = "${updated.note} ${account?.name ?: ""}"
+            transactionRepository.updateTransaction(original, updated, searchableText)
+            onSaved()
+        }
+    }
+
     // Search and Filter controls
     fun updateSearchQuery(query: String) {
         _filterState.value = _filterState.value.copy(query = query)
@@ -303,6 +313,10 @@ class TransactionsViewModel(
         _filterState.value = _filterState.value.copy(accountId = accountId)
     }
 
+    fun updateTagFilter(tag: String?) {
+        _filterState.value = _filterState.value.copy(tag = tag)
+    }
+
     fun clearFilters() {
         _filterState.value = TransactionFilterState()
         _searchResults.value = null
@@ -313,9 +327,17 @@ class TransactionsViewModel(
             val matchType = filter.type == null || tx.type == filter.type
             val matchAcc = filter.accountId == null || tx.accountId == filter.accountId || tx.toAccountId == filter.accountId
             val matchCat = filter.categoryId == null || tx.categoryId == filter.categoryId
+            val matchTag = filter.tag == null || extractTags(tx.note).any { it.equals(filter.tag, ignoreCase = true) }
             val matchStart = filter.startDate == null || tx.timestamp >= filter.startDate
             val matchEnd = filter.endDate == null || tx.timestamp <= filter.endDate
-            matchType && matchAcc && matchCat && matchStart && matchEnd
+            matchType && matchAcc && matchCat && matchTag && matchStart && matchEnd
+        }
+    }
+
+    companion object {
+        fun extractTags(note: String): List<String> {
+            val regex = Regex("#(\\w+)")
+            return regex.findAll(note).map { it.groupValues[1] }.toList()
         }
     }
 }
